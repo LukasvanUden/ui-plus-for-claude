@@ -44,13 +44,24 @@ test('sidebar row, popover time lines and settings', { timeout: 40_000 }, async 
   assert.deepEqual(popover.lines, [true, true], 'rows are matched by title, "Weekly" included');
   assert.equal(popover.overLines, 1);
   assert.deepEqual(popover.onWarning, [false, true], 'red only where Claude\'s own meter left its accent color');
-  assert.equal(popover.settingsParent, 'usage-rows', 'the settings row shares the inset of the limits');
+  assert.equal(popover.settingsLast, true, 'the settings row comes last');
+  assert.equal(popover.settingsInset, '16px', 'with the inset of the limits');
+  assert.equal(popover.contextBlocks, 1);
   assert.equal(popover.context, 'Context 37% used 74k / 200k Compact session', 'the session rail\'s context shows above the limits');
   assert.equal(popover.contextFirst, true);
   assert.equal(popover.contextWidth, '37%');
   assert.equal(popover.contextBar, 'rgb(74, 127, 217) rgb(208, 96, 58)', 'the rail\'s colored bar is copied with its colors');
   assert.equal(popover.contextBarQuiet, true, 'the copy has nothing to focus or announce');
   assert.equal(popover.plainBarHidden, true);
+
+  const credits = steps.CREDITS.popover;
+  assert.equal(credits.contextBlocks, 1, 'credits below the limits leave one context block');
+  assert.equal(credits.contextFirst, true, 'still first among the limits');
+  assert.equal(credits.settingsLast, true, 'the settings row moves below the credits');
+  assert.equal(credits.settingsInset, '16px');
+  assert.deepEqual(credits.lines, [true, true, false], 'no time line on the credits meter');
+  assert.equal(steps.CREDITS.mutations, 0);
+  assert.deepEqual(steps.CREDITS_GONE.popover.lines, [true, true]);
 
   assert.equal(steps.COMPACTED.popover.compacted, 1, 'the button presses the rail\'s own Compact button');
   assert.equal(steps.COMPACTED.mutations, 0);

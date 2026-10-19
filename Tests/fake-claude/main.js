@@ -28,6 +28,9 @@ const POPOVER = `<div data-cds="Popover" role="dialog"><div style="display:flex;
   </div></div>
 </div></div>`;
 
+const CREDITS = `<div class="credits"><div><span id="credits-label">Cloud session credits</span></div>
+  <div data-cds="Meter" data-variant="success"><div role="meter" aria-labelledby="credits-label" style="height:4px"><div data-usage-bar-fill style="height:100%;width:100%"></div></div></div></div>`;
+
 function usage(weekly = 30) {
   const at = (ms) => new Date(Date.now() + ms).toISOString();
   const week = at(6 * 86_400_000);
@@ -89,7 +92,9 @@ function state(contents) {
         contextFirst: popover.querySelector('.usage-rows')?.firstElementChild.classList.contains('up-context') ?? false,
         contextWidth: popover.querySelector('.up-context-fill')?.style.width ?? null,
         compacted: window.compacted ?? 0,
-        settingsParent: popover.querySelector('.up-settings')?.parentElement.className ?? null,
+        settingsLast: popover.querySelector('[role="group"]')?.lastElementChild?.classList.contains('up-settings') ?? false,
+        settingsInset: popover.querySelector('.up-settings')?.style.paddingLeft ?? null,
+        contextBlocks: popover.querySelectorAll('.up-context').length,
         overLines: popover.querySelectorAll('.up-in-popover .up-segment-over').length,
         onWarning: [...popover.querySelectorAll('.up-in-popover')].map((line) => line.classList.contains('up-on-warning')),
         settings: [...popover.querySelectorAll('.up-settings input')].map((input) => input.dataset.setting + ':' + input.checked),
@@ -134,6 +139,10 @@ app.whenReady().then(async () => {
 
   await step(contents, 'LOADED');
   await step(contents, 'POPOVER', `document.getElementById('portal-root').innerHTML = ${JSON.stringify(POPOVER)}`);
+  // Like cloud session credits in some accounts: a block with a meter of its
+  // own below the limits, loaded after them.
+  await step(contents, 'CREDITS', `document.querySelector('[role="group"]').insertAdjacentHTML('beforeend', ${JSON.stringify(CREDITS)})`);
+  await step(contents, 'CREDITS_GONE', `document.querySelector('.credits').remove()`);
   await step(contents, 'COMPACTED', `document.querySelector('.up-context-action').click()`);
   await step(contents, 'CONTEXT_CHANGED', `const summary = document.querySelector('[data-rail-context-summary]'); summary.setAttribute('data-rail-context-pct', '85'); summary.firstChild.nodeValue = '170k / 200k'`);
   await step(contents, 'COLLAPSED', `document.querySelector('#usage-pace .up-header').click()`);

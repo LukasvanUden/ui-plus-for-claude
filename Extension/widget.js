@@ -443,21 +443,39 @@
     if (!section) return;
     const { end, headerRow, list } = section;
     const bars = [...list.querySelectorAll(BAR)];
-    // The settings row goes last into the block that holds all limits, so it
-    // shares their inset; older popovers list the limits directly.
-    const settingsHost = (bars.length > 1 && [...list.children].find((child) => bars.every((bar) => child.contains(bar)))) || list;
-    const settingsRow = list.querySelector('.up-settings');
+    // Claude groups the limit rows in one inset block; blocks below it, such
+    // as cloud session credits, have meters of their own. Older popovers list
+    // the rows directly, each with its bar as a direct child.
+    const rowsBlock = bars.length > 0 ? [...list.children].find((child) => child.contains(bars[0])) : null;
+    const limits = rowsBlock && !rowsBlock.querySelector(':scope > :is(' + BAR + ', [data-cds="Meter"])') ? rowsBlock : list;
+
+    // The settings row goes last, with the inset of the limits.
+    let settingsRow = list.querySelector('.up-settings');
     // After "Uninstall…", only the hint stays until the popover closes.
     if (removed) {
       if (settingsRow && !settingsRow.classList.contains('up-removed')) settingsRow.remove();
     } else if (!settingsRow) {
-      settingsHost.append(buildSettings());
-    } else if (settingsRow.parentElement !== settingsHost) {
-      settingsHost.append(settingsRow);
+      settingsRow = buildSettings();
+      list.append(settingsRow);
+    } else if (settingsRow !== list.lastElementChild) {
+      list.append(settingsRow);
+    }
+    if (settingsRow?.isConnected) {
+      const style = limits === list ? null : getComputedStyle(limits);
+      const inset = style ? style.paddingLeft + ' ' + style.paddingRight : '';
+      if (settingsRow.dataset.inset !== inset) {
+        settingsRow.dataset.inset = inset;
+        settingsRow.style.paddingLeft = style?.paddingLeft ?? '';
+        settingsRow.style.paddingRight = style?.paddingRight ?? '';
+      }
     }
 
-    if (removed || !settings.popover) list.querySelector('.up-context')?.remove();
-    else syncContext(settingsHost);
+    // Only one context block, first in the limits block: an earlier render
+    // may have placed one elsewhere before the popover finished loading.
+    for (const block of list.querySelectorAll('.up-context')) {
+      if (removed || !settings.popover || block.parentElement !== limits) block.remove();
+    }
+    if (!removed && settings.popover) syncContext(limits);
 
     let pace = headerRow.querySelector(':scope > .up-popover-pace');
     if (removed || !settings.popover || !view) {
@@ -475,9 +493,11 @@
     }
     if (pace.textContent !== (view.pace ?? '')) pace.textContent = view.pace ?? '';
 
-    bars.forEach((bar, index) => {
+    // Time lines only for the limits, not for meters such as credits.
+    const limitBars = bars.filter((bar) => limits.contains(bar));
+    limitBars.forEach((bar, index) => {
       const block = barBlock(bar);
-      const row = rowTitled(titleOf(bar)) ?? (bars.length === view.rows.length ? view.rows[index] : null);
+      const row = rowTitled(titleOf(bar)) ?? (limitBars.length === view.rows.length ? view.rows[index] : null);
       const current = block.previousElementSibling?.classList.contains('up-time') ? block.previousElementSibling : null;
       if (!row?.time) {
         current?.remove();
