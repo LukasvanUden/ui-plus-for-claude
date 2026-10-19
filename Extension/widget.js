@@ -509,7 +509,9 @@
   // conversation. The card stays mounted while collapsed and marks its
   // headline with data-rail-context-summary and data-rail-context-pct, so the
   // popover mirrors it above the limits, with a button that presses the
-  // card's own. With the rail hidden, the button shows the rail instead.
+  // card's own, and a copy of the card's bar colored by what fills the
+  // context (messages, tools, skills…). With the rail hidden, the button
+  // shows the rail instead.
   const COMPACT = /^(Compact session|Sitzung komprimieren)$/i;
   const SHOW_RAIL = 'button[aria-label="Show session rail"], button[aria-label="Sitzungsleiste anzeigen"]';
 
@@ -517,9 +519,10 @@
     const summary = document.querySelector('section [data-rail-context-summary]');
     if (!summary) return null;
     const pct = Number(summary.getAttribute('data-rail-context-pct') ?? NaN);
-    const compact = [...summary.closest('section').querySelectorAll('button')]
-      .find((button) => COMPACT.test(button.textContent.trim())) ?? null;
-    return { text: summary.textContent.trim(), pct: Number.isFinite(pct) ? clamp(pct, 0, 100) : null, compact };
+    const section = summary.closest('section');
+    const compact = [...section.querySelectorAll('button')].find((button) => COMPACT.test(button.textContent.trim())) ?? null;
+    const bar = section.querySelector('[data-cds="StackedMeter"]');
+    return { text: summary.textContent.trim(), pct: Number.isFinite(pct) ? clamp(pct, 0, 100) : null, compact, bar };
   }
 
   // Same markup and classes as the rows of Claude's popover; only the bar is
@@ -533,6 +536,7 @@
     );
     const track = element('div', 'up-context-track');
     track.append(element('div', 'up-context-fill'));
+    const stacked = element('div', 'up-context-stacked');
     const foot = element('div', 'up-context-foot text-footnote text-muted-as-secondary');
     foot.append(
       element('span', 'up-context-caption'),
@@ -541,8 +545,23 @@
         (context ? context.compact : document.querySelector(SHOW_RAIL))?.click();
       }),
     );
-    block.append(head, track, foot);
+    block.append(head, track, stacked, foot);
     return block;
+  }
+
+  // What each popover's bar copy was made from, to copy again on changes.
+  const barSources = new WeakMap();
+
+  // A copy that keeps the look but nothing to focus, hover or point to.
+  function quietCopy(node) {
+    const copy = node.cloneNode(true);
+    for (const element of [copy, ...copy.querySelectorAll('*')]) {
+      for (const { name } of [...element.attributes]) {
+        if (name === 'id' || name === 'tabindex' || name === 'role' || name.startsWith('aria-')) element.removeAttribute(name);
+      }
+    }
+    copy.setAttribute('aria-hidden', 'true');
+    return copy;
   }
 
   function setText(node, text) {
@@ -572,8 +591,16 @@
     setText(block.querySelector('.up-context-title'), text.context);
     setText(block.querySelector('.up-context-value'), pct === null ? (context?.text ?? '') : text.used(percent));
     setText(block.querySelector('.up-context-caption'), pct === null ? '' : context.text);
+    // Claude's colored bar where the card has one, else a plain bar.
+    const stacked = block.querySelector('.up-context-stacked');
+    const source = context?.bar?.outerHTML ?? '';
+    if ((barSources.get(stacked) ?? '') !== source) {
+      barSources.set(stacked, source);
+      stacked.replaceChildren(...(context?.bar ? [quietCopy(context.bar)] : []));
+    }
+    setHidden(stacked, !source);
     const track = block.querySelector('.up-context-track');
-    setHidden(track, pct === null);
+    setHidden(track, pct === null || Boolean(source));
     const fill = track.firstElementChild;
     const width = (pct ?? 0) + '%';
     if (fill.style.width !== width) fill.style.width = width;

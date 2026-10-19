@@ -12,7 +12,7 @@ A **Usage** row below **More** shows how far above or below pace your weekly usa
 - Bar: usage, exactly as in Claude's own usage view.
 - Line above it: time elapsed in that window. Grey up to where usage and time agree, then green where time is ahead of usage (room to spare), or orange where usage is ahead of time (too fast). Once Claude colors a bar as near its limit, orange turns red.
 
-Claude's usage popover (the ring below the message box) gets the same time lines and the weekly pace next to **Usage**. Above the limits, it shows the **context** of the current session again, with **Compact session** once Claude offers it (from 50%). Claude moved both into the Context card of the session rail, right of the conversation; the popover mirrors that card, so with the rail hidden it offers **Show session rail** instead. A **Usage Pace** row at the bottom turns the sidebar row and the popover additions on or off.
+Claude's usage popover (the ring below the message box) gets the same time lines and the weekly pace next to **Usage**. Above the limits, it shows the **context** of the current session again, in Claude's bar colored by what fills it (messages, tools, skills, …), with **Compact session** once Claude offers it (from 50%). Claude moved both into the Context card of the session rail, right of the conversation; the popover mirrors that card, so with the rail hidden it offers **Show session rail** instead. A **Usage Pace** row at the bottom turns the sidebar row and the popover additions on or off.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/compact-popover-dark.png">

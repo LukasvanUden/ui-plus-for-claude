@@ -37,6 +37,8 @@
 /* Context of the session, mirrored from the session rail into the popover */
 .up-context-track { height: 8px; border-radius: 99px; overflow: hidden; background: var(--cds-alpha-2, color-mix(in srgb, currentColor 14%, transparent)); box-shadow: inset 0 0 0 1px var(--cds-alpha-1, transparent); }
 .up-context-track[hidden] { display: none; }
+.up-context-stacked[hidden] { display: none; }
+.up-context-stacked > * { width: 100%; pointer-events: none; }
 .up-context-fill { height: 100%; border-radius: inherit; background: var(--cds-fill-accent, #2a78d6); transition: width .2s ease-out; }
 .up-context-fill.up-context-full { background: var(--cds-fill-warning, #e0913a); }
 .up-context-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }

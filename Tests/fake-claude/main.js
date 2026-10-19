@@ -10,7 +10,7 @@ const PAGE = `<!doctype html><html lang="en" style="--cds-fill-accent:#2a78d6"><
   <div><a>Artifacts</a><a>Customize</a><button id="more" aria-expanded="false" class="nav-row"><span data-cds="Icon" aria-hidden="true" style="font-size:16px">&#xe000;</span><span class="text-muted">More</span></button></div>
   <div class="dframe-recents-by-mode"><div class="df-label-inset"><button><span>Projects</span></button></div><ul><li>Booking UI</li></ul></div>
 </div>
-<aside><section><span data-rail-context-summary data-rail-context-pct="37">74k / 200k</span><button onclick="window.compacted = (window.compacted ?? 0) + 1">Compact session</button></section></aside>
+<aside><section><span data-rail-context-summary data-rail-context-pct="37">74k / 200k</span><div data-cds="StackedMeter" role="img" aria-label="Context" tabindex="0"><span style="width:30%;background-color:rgb(74, 127, 217)"></span><span style="width:7%;background-color:rgb(208, 96, 58)"></span></div><button onclick="window.compacted = (window.compacted ?? 0) + 1">Compact session</button></section></aside>
 <div id="portal-root"></div>
 </body></html>`;
 
@@ -80,7 +80,12 @@ function state(contents) {
         pace: popover.querySelector('.up-popover-pace')?.textContent ?? null,
         lines: [...popover.querySelectorAll('[role="meter"]')].map((bar) => bar.closest('[data-cds="Meter"]').previousElementSibling?.classList.contains('up-time') ?? false),
         paceBeforeIcons: popover.querySelector('.up-popover-pace')?.nextElementSibling?.className ?? null,
-        context: popover.querySelector('.up-context') && [...popover.querySelectorAll('.up-context span, .up-context button')].map((node) => node.textContent).join(' '),
+        context: popover.querySelector('.up-context') && [...popover.querySelectorAll('.up-context-title, .up-context-value, .up-context-caption, .up-context-action')].map((node) => node.textContent).join(' '),
+        contextBar: popover.querySelector('.up-context-stacked:not([hidden]) [data-cds="StackedMeter"]')
+          ? [...popover.querySelectorAll('.up-context-stacked [data-cds="StackedMeter"] > span')].map((part) => part.style.backgroundColor).join(' ')
+          : null,
+        contextBarQuiet: [...popover.querySelectorAll('.up-context-stacked [role], .up-context-stacked [tabindex]')].length === 0,
+        plainBarHidden: popover.querySelector('.up-context-track')?.hidden ?? null,
         contextFirst: popover.querySelector('.usage-rows')?.firstElementChild.classList.contains('up-context') ?? false,
         contextWidth: popover.querySelector('.up-context-fill')?.style.width ?? null,
         compacted: window.compacted ?? 0,

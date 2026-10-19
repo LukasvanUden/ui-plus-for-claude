@@ -50,6 +50,11 @@ body {
 
 button { font: inherit; color: inherit; }
 
+/* Screenshots (Scripts/screenshots.js) */
+:root[data-capture], :root[data-capture] body { background: transparent; }
+:root[data-capture] .toolbar { display: none; }
+:root[data-capture] .stage { min-height: 100vh; }
+
 /* Demo controls */
 .toolbar {
   display: flex;
@@ -188,6 +193,11 @@ button { font: inherit; color: inherit; }
 .meter-fill { height: 100%; border-radius: inherit; background: var(--cds-fill-accent); }
 [data-variant="warning"] .meter-fill { background: var(--cds-fill-warning); }
 [data-variant="danger"] .meter-fill { background: var(--cds-fill-danger); }
+
+/* The rail's context bar: one segment per kind of content, free space left
+   as track. */
+.stacked-meter { display: flex; gap: 2px; height: 6px; overflow: hidden; border-radius: 999px; background: var(--cds-alpha-2); }
+.stacked-meter > span { flex: none; min-width: 3px; height: 100%; border-radius: 1px; }
 
 /* Utility classes from Claude's markup */
 .flex { display: flex; }

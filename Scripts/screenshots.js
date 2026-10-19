@@ -9,10 +9,11 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const OUT = path.join(ROOT, 'docs', 'screenshots');
 
-// usage and context name scenarios in docs/demo/demo.js.
+// usage and context name scenarios in docs/demo/demo.js. Every shot keeps
+// the context at 50% or more, where Claude offers Compact session.
 const SHOTS = [
-  { name: 'session-tight', usage: 'session', context: 'low' },
-  { name: 'weekly-tight', usage: 'weekly', context: 'low' },
+  { name: 'session-tight', usage: 'session', context: 'mid' },
+  { name: 'weekly-tight', usage: 'weekly', context: 'high' },
   { name: 'compact', usage: 'under', context: 'compact' },
 ];
 const THEMES = ['dark', 'light'];
@@ -79,7 +80,15 @@ app.whenReady().then(async () => {
   const server = await serve();
   const { port } = server.address();
   fs.mkdirSync(OUT, { recursive: true });
-  const win = new BrowserWindow({ show: false, width: 1100, height: 760, webPreferences: { backgroundThrottling: false } });
+  // Transparent around the popover, so the images sit on any page color.
+  const win = new BrowserWindow({
+    show: false,
+    width: 1100,
+    height: 760,
+    transparent: true,
+    backgroundColor: '#00000000',
+    webPreferences: { backgroundThrottling: false },
+  });
   const contents = win.webContents;
   contents.on('console-message', (event) => {
     if (event.level === 'error') console.error('demo: ' + event.message);
@@ -87,7 +96,7 @@ app.whenReady().then(async () => {
 
   for (const shot of SHOTS) {
     for (const theme of THEMES) {
-      const query = new URLSearchParams({ usage: shot.usage, context: shot.context, lang: LANG, theme });
+      const query = new URLSearchParams({ usage: shot.usage, context: shot.context, lang: LANG, theme, capture: '1' });
       await win.loadURL(`http://127.0.0.1:${port}/docs/demo/?${query}`);
       await settled(contents);
       for (const [part, rect] of Object.entries(await regions(contents))) {

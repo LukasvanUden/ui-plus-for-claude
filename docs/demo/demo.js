@@ -146,6 +146,8 @@
 
   document.documentElement.lang = text.locale;
   document.documentElement.dataset.theme = state.theme;
+  // Scripts/screenshots.js: no toolbar and no page background.
+  if (params.has('capture')) document.documentElement.dataset.capture = '';
   // Every load starts like a fresh install: rows open, both places on.
   for (const key of Object.keys(localStorage)) if (key.startsWith('usage-pace:')) localStorage.removeItem(key);
 
@@ -262,8 +264,34 @@
 
   // Session rail ------------------------------------------------------------
 
-  // The extension reads the context from the rail's headline and presses the
-  // rail's own Compact button; compacting here drops the context to 12%.
+  // The extension reads the context from the rail's headline, copies the
+  // rail's colored bar (a StackedMeter, one segment per kind of content) and
+  // presses the rail's own Compact button; compacting here drops the
+  // context to 12%.
+  const SEGMENTS = [
+    { name: 'MCP tools', pct: 1.6, color: '#d0603a' },
+    { name: 'System tools', pct: 1.6, color: '#4c9a75' },
+    { name: 'Skills', pct: 1, color: '#c9922e' },
+    { name: 'System prompt', pct: 1.2, color: '#a3a19b' },
+    { name: 'Autocompact buffer', pct: 3.3, color: '#6b6a66' },
+  ];
+
+  function stackedMeter(pct) {
+    const fixed = SEGMENTS.reduce((sum, segment) => sum + segment.pct, 0);
+    const segments = [{ name: 'Messages', pct: Math.max(0, pct - fixed), color: '#4a7fd9' }, ...SEGMENTS];
+    const meter = document.createElement('div');
+    meter.setAttribute('data-cds', 'StackedMeter');
+    meter.className = 'stacked-meter';
+    meter.append(...segments.map((segment) => {
+      const part = document.createElement('span');
+      part.dataset.category = segment.name;
+      part.style.width = segment.pct + '%';
+      part.style.backgroundColor = segment.color;
+      return part;
+    }));
+    return meter;
+  }
+
   const context = CONTEXT[state.context];
   const rail = document.getElementById('rail');
   if (context.pct === null) {
@@ -279,7 +307,8 @@
     headline.setAttribute('data-rail-context-summary', '');
     headline.setAttribute('data-rail-context-pct', String(context.pct));
     headline.textContent = context.summary;
-    section.append(headline);
+    let meter = stackedMeter(context.pct);
+    section.append(headline, meter);
     if (context.pct >= COMPACT_FROM) {
       const compact = document.createElement('button');
       compact.type = 'button';
@@ -287,6 +316,7 @@
       compact.addEventListener('click', () => {
         headline.setAttribute('data-rail-context-pct', '12');
         headline.firstChild.nodeValue = '120.4k / 1M';
+        meter.replaceWith(meter = stackedMeter(12));
         compact.remove();
       });
       section.append(compact);

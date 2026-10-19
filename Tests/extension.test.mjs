@@ -48,6 +48,9 @@ test('sidebar row, popover time lines and settings', { timeout: 40_000 }, async 
   assert.equal(popover.context, 'Context 37% used 74k / 200k Compact session', 'the session rail\'s context shows above the limits');
   assert.equal(popover.contextFirst, true);
   assert.equal(popover.contextWidth, '37%');
+  assert.equal(popover.contextBar, 'rgb(74, 127, 217) rgb(208, 96, 58)', 'the rail\'s colored bar is copied with its colors');
+  assert.equal(popover.contextBarQuiet, true, 'the copy has nothing to focus or announce');
+  assert.equal(popover.plainBarHidden, true);
 
   assert.equal(steps.COMPACTED.popover.compacted, 1, 'the button presses the rail\'s own Compact button');
   assert.equal(steps.COMPACTED.mutations, 0);
