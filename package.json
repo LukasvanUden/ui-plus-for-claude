@@ -2,7 +2,8 @@
   "name": "usage-pace-for-claude",
   "private": true,
   "scripts": {
-    "test": "node --test Tests/*.test.mjs"
+    "test": "node --test Tests/*.test.mjs",
+    "screenshots": "electron Scripts/screenshots.js"
   },
   "devDependencies": {
     "electron": "^44.5.0"

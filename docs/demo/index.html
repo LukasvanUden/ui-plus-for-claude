@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usage Pace Demo</title>
+<!-- A stand-in for the Claude desktop app's sidebar, usage popover and session
+     rail, with the real extension (../../Extension) loaded on top. demo.js
+     answers the usage API with the scenario picked in the toolbar, so every
+     state can be shown and screenshotted without waiting for it in Claude. -->
+<link rel="stylesheet" href="demo.css">
+<link rel="stylesheet" href="../../Extension/widget.css">
+</head>
+<body>
+<form class="toolbar" id="toolbar">
+  <label>Usage <select name="usage"></select></label>
+  <label>Context <select name="context"></select></label>
+  <label>Language <select name="lang"><option value="en">English</option><option value="de">Deutsch</option></select></label>
+  <label>Theme <select name="theme"><option value="dark">Dark</option><option value="light">Light</option></select></label>
+</form>
+
+<main class="stage">
+  <nav class="sidebar">
+    <div class="dframe-nav-scroll">
+      <div class="nav-group" id="nav-group"></div>
+      <div class="dframe-recents-by-mode">
+        <div class="df-label-inset"><button type="button" class="section-label"><span id="recents-label">Recents</span></button></div>
+        <ul class="recents" id="recents"></ul>
+      </div>
+    </div>
+  </nav>
+
+  <section class="conversation">
+    <div class="popover-anchor">
+      <div id="portal-root"></div>
+      <div class="composer">
+        <span class="composer-placeholder" id="composer-placeholder">Reply…</span>
+        <span class="composer-ring" aria-hidden="true"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Claude's session rail, which the popover mirrors the context from. -->
+  <aside class="rail" id="rail" hidden></aside>
+</main>
+
+<script src="demo.js"></script>
+<script src="../../Extension/widget.js"></script>
+</body>
+</html>

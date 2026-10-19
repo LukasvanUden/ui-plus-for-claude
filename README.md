@@ -2,16 +2,29 @@
 
 Your Claude plan usage, always visible in the sidebar of the Claude desktop app, with how far through each limit window you are.
 
-A **Usage** row below **More** shows how far above or below pace your weekly usage is, e.g. "11% under pace". Click it to show or hide the bars:
+A **Usage** row below **More** shows how far above or below pace your weekly usage is, e.g. "20% under pace". Click it to show or hide the bars:
 
-<img src="docs/sidebar.png" alt="The Usage row below More in the sidebar of the Claude desktop app, with the session and weekly limits" width="320">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/compact-sidebar-dark.png">
+  <img src="docs/screenshots/compact-sidebar-light.png" alt="The Usage row below More in the sidebar of the Claude desktop app, with the session and weekly limits" width="288">
+</picture>
 
-- Blue bar: usage, exactly as in Claude's own usage view.
-- Thin line above it: time elapsed in that window. Green where time is ahead of usage (room to spare), orange where usage is ahead of time (too fast).
+- Bar: usage, exactly as in Claude's own usage view.
+- Line above it: time elapsed in that window. Grey up to where usage and time agree, then green where time is ahead of usage (room to spare), or orange where usage is ahead of time (too fast). Once Claude colors a bar as near its limit, orange turns red.
 
-Claude's own usage popover gets the same time lines and the weekly pace next to "Plan usage limits". A **Usage Pace** row at the bottom of its usage section turns the sidebar row and the popover additions on or off.
+Claude's usage popover (the ring below the message box) gets the same time lines and the weekly pace next to **Usage**. Above the limits, it shows the **context** of the current session again, with **Compact session** once Claude offers it (from 50%). Claude moved both into the Context card of the session rail, right of the conversation; the popover mirrors that card, so with the rail hidden it offers **Show session rail** instead. A **Usage Pace** row at the bottom turns the sidebar row and the popover additions on or off.
 
-<img src="docs/popover.png" alt="Time lines above the bars in Claude's usage popover, and the Usage Pace settings row" width="480">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/compact-popover-dark.png">
+  <img src="docs/screenshots/compact-popover-light.png" alt="Claude's usage popover with the session's context and Compact session, time lines above the limits, and the Usage Pace settings row" width="392">
+</picture>
+
+When one limit runs out faster than the other:
+
+| Session limit tight, weekly fine | Weekly limit tight, session fine |
+| --- | --- |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/session-tight-popover-dark.png"><img src="docs/screenshots/session-tight-popover-light.png" alt="Popover: session limit at 85%, ahead of time; weekly limit at 40%, behind time" width="392"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/weekly-tight-popover-dark.png"><img src="docs/screenshots/weekly-tight-popover-light.png" alt="Popover: session limit at 30%, behind time; weekly limit at 82%, ahead of time" width="392"></picture> |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/session-tight-sidebar-dark.png"><img src="docs/screenshots/session-tight-sidebar-light.png" alt="Sidebar: the same limits, 20% under pace for the week" width="288"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/weekly-tight-sidebar-dark.png"><img src="docs/screenshots/weekly-tight-sidebar-light.png" alt="Sidebar: the same limits, 18% over pace for the week" width="288"></picture> |
 
 The text follows Claude's language (English or German).
 
@@ -72,6 +85,16 @@ npm test
 ```
 
 `Scripts/build-app.sh` builds `build/Usage Pace.app`, signed ad hoc. `Scripts/release.sh <notarytool profile>` builds `build/Usage-Pace.dmg` for a release: signed with your Developer ID and notarized by Apple. It lets Finder arrange the disk image window, so macOS asks once to let your terminal control Finder.
+
+For screenshots, [docs/demo](docs/demo/index.html) shows the extension on a stand-in for Claude's sidebar and usage popover, with a toolbar to switch between scenarios (under, on or over pace, near the limit, new windows), context levels, English and German, and dark and light. Serve the repository and open it:
+
+```sh
+python3 -m http.server 4173
+```
+
+Then go to http://localhost:4173/docs/demo/. `npm run screenshots` exports the popover and the sidebar for a few of these scenarios, in dark and light, to [docs/screenshots](docs/screenshots).
+
+Usage numbers in the demo must be ones Claude can reach: a full 5-hour session uses about 20–25% of the weekly limit, so weekly usage is never below a fifth of the session's, and a model's weekly limit never exceeds the one for all models. The demo logs an error for a scenario that breaks this.
 
 The tests load the extension into a stand-in for Claude ([Tests/fake-claude](Tests/fake-claude/main.js)) that serves a fake claude.ai page and usage API.
 
