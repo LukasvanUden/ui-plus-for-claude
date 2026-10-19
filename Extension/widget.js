@@ -27,6 +27,10 @@
       sidebar: 'Sidebar',
       popover: 'Popover',
       uninstall: 'Uninstall…',
+      context: 'Context',
+      used: (percent) => percent + ' used',
+      compact: 'Compact session',
+      showRail: 'Show session rail',
       confirmUninstall: 'Remove Usage Pace from Claude?',
       cancel: 'Cancel',
       remove: 'Remove',
@@ -34,7 +38,7 @@
     },
     de: {
       title: 'Nutzung',
-      fiveHour: '5-Stunden-Limit',
+      fiveHour: 'Sitzungslimit',
       weekly: (name) => 'Wöchentlich · ' + name,
       allModels: 'alle Modelle',
       hoursMinutes: (h, m) => (h > 0 ? h + ' Std. ' : '') + m + ' Min.',
@@ -43,7 +47,11 @@
       onPace: 'Im Plan',
       sidebar: 'Seitenleiste',
       popover: 'Popover',
-      uninstall: 'Deinstallieren…',
+      uninstall: 'Entfernen…',
+      context: 'Kontext',
+      used: (percent) => percent + ' genutzt',
+      compact: 'Sitzung komprimieren',
+      showRail: 'Sitzungsleiste anzeigen',
       confirmUninstall: 'Usage Pace aus Claude entfernen?',
       cancel: 'Abbrechen',
       remove: 'Entfernen',
@@ -100,7 +108,7 @@
         ? null
         : { shared: Math.min(used, elapsed), end: Math.max(used, elapsed), over: used > elapsed };
       const reset = formatReset(resetAt, limit.kind, now, strings, locale);
-      return [{ label, used, time, meta: (reset ? reset + ' · ' : '') + used + '%' }];
+      return [{ kind: limit.kind, model, label, used, time, meta: (reset ? reset + ' · ' : '') + used + '%' }];
     });
     return { rows, pace };
   }
@@ -305,7 +313,7 @@
 
   function place() {
     if (!widget) return;
-    if (removed || !settings.sidebar) {
+    if (removed || !settings.sidebar || !view) {
       widget.remove();
       return;
     }
@@ -330,14 +338,52 @@
 
   // Popover -----------------------------------------------------------------
 
-  // Claude's usage popover: its section header links to /settings/usage, and
-  // each limit is a progressbar labelled by its row title.
+  // Claude's usage popover: its header links to /settings/usage, the limits
+  // follow right after it, and each limit is a meter (a progressbar in older
+  // versions) labelled by its row title. The link sits directly in the header
+  // or in a group of icon buttons at its end.
   function usageSection() {
     const root = document.getElementById('portal-root') ?? document.body;
     const link = root.querySelector('[data-cds="Popover"] a[href="/settings/usage"]');
-    const headerRow = link?.parentElement;
+    let headerRow = link?.parentElement;
+    while (headerRow && !headerRow.nextElementSibling && headerRow.parentElement?.closest('[data-cds="Popover"]')) {
+      headerRow = headerRow.parentElement;
+    }
     const list = headerRow?.nextElementSibling;
-    return list ? { link, headerRow, list } : null;
+    if (!list) return null;
+    const end = [...headerRow.children].find((child) => child.contains(link));
+    return { end, headerRow, list };
+  }
+
+  const BAR = '[role="meter"], [role="progressbar"]';
+
+  // The time line goes right above the bar: above Claude's meter element, or
+  // above the progressbar itself.
+  function barBlock(bar) {
+    return bar.closest('[data-cds="Meter"]') ?? bar;
+  }
+
+  // Claude's popover titles the weekly limit for all models just "Weekly".
+  const POPOVER_TITLES = {
+    session: /^(Session limit|Sitzungslimit|5-Stunden-Limit)$/i,
+    weekly_all: /^(Weekly|Wöchentlich)( · (all models|alle Modelle))?$/i,
+  };
+
+  function rowTitled(title) {
+    if (!title) return null;
+    return view.rows.find((row) => row.label === title)
+      ?? view.rows.find((row) => POPOVER_TITLES[row.kind]?.test(title))
+      ?? view.rows.find((row) => row.kind === 'weekly_scoped' && title.includes(row.model))
+      ?? null;
+  }
+
+  function titleOf(bar) {
+    const ids = (bar.getAttribute('aria-labelledby') || barBlock(bar).getAttribute('aria-labelledby') || '').split(/\s+/);
+    for (const id of ids) {
+      const text = id && document.getElementById(id)?.textContent.trim();
+      if (text) return text;
+    }
+    return null;
   }
 
   function uninstall(row) {
@@ -395,34 +441,44 @@
   function enhancePopover() {
     const section = usageSection();
     if (!section) return;
-    const { link, headerRow, list } = section;
-    const settingsRow = list.querySelector(':scope > .up-settings');
+    const { end, headerRow, list } = section;
+    const bars = [...list.querySelectorAll(BAR)];
+    // The settings row goes last into the block that holds all limits, so it
+    // shares their inset; older popovers list the limits directly.
+    const settingsHost = (bars.length > 1 && [...list.children].find((child) => bars.every((bar) => child.contains(bar)))) || list;
+    const settingsRow = list.querySelector('.up-settings');
     // After "Uninstall…", only the hint stays until the popover closes.
     if (removed) {
       if (settingsRow && !settingsRow.classList.contains('up-removed')) settingsRow.remove();
     } else if (!settingsRow) {
-      list.append(buildSettings());
+      settingsHost.append(buildSettings());
+    } else if (settingsRow.parentElement !== settingsHost) {
+      settingsHost.append(settingsRow);
     }
 
-    const bars = [...list.querySelectorAll('[role="progressbar"]')];
+    if (removed || !settings.popover) list.querySelector('.up-context')?.remove();
+    else syncContext(settingsHost);
+
     let pace = headerRow.querySelector(':scope > .up-popover-pace');
     if (removed || !settings.popover || !view) {
       pace?.remove();
-      bars.forEach((bar) => bar.previousElementSibling?.classList.contains('up-time') && bar.previousElementSibling.remove());
+      bars.forEach((bar) => {
+        const previous = barBlock(bar).previousElementSibling;
+        if (previous?.classList.contains('up-time')) previous.remove();
+      });
       return;
     }
 
     if (!pace) {
-      pace = element('span', (headerRow.firstElementChild?.className ?? '') + ' up-popover-pace');
-      headerRow.insertBefore(pace, link);
+      pace = element('span', 'up-popover-pace');
+      headerRow.insertBefore(pace, end ?? null);
     }
     if (pace.textContent !== (view.pace ?? '')) pace.textContent = view.pace ?? '';
 
     bars.forEach((bar, index) => {
-      const title = document.getElementById(bar.getAttribute('aria-labelledby') ?? '')?.textContent.trim();
-      const row = view.rows.find((candidate) => candidate.label === title)
-        ?? (bars.length === view.rows.length ? view.rows[index] : null);
-      const current = bar.previousElementSibling?.classList.contains('up-time') ? bar.previousElementSibling : null;
+      const block = barBlock(bar);
+      const row = rowTitled(titleOf(bar)) ?? (bars.length === view.rows.length ? view.rows[index] : null);
+      const current = block.previousElementSibling?.classList.contains('up-time') ? block.previousElementSibling : null;
       if (!row?.time) {
         current?.remove();
         return;
@@ -431,24 +487,113 @@
       if (current?.dataset.version !== String(version)) {
         line = timeLine(row.time, 'up-in-popover');
         if (current) current.replaceWith(line);
-        else bar.before(line);
+        else block.before(line);
       }
       // Near the limit Claude paints its bar in a warning color instead of
       // the accent; the "over" segment then turns red to stay distinct.
-      // (.up-time carries the accent as its invisible outline color.)
-      const fill = bar.firstElementChild;
-      const warning = Boolean(fill) && getComputedStyle(fill).backgroundColor !== getComputedStyle(line).outlineColor;
+      // Claude's meter names its color; for a plain progressbar, .up-time
+      // carries the accent as its invisible outline color to compare with.
+      const fill = bar.querySelector('[data-usage-bar-fill]') ?? bar.firstElementChild;
+      const variant = block.dataset.variant;
+      const warning = variant
+        ? variant !== 'accent'
+        : Boolean(fill) && getComputedStyle(fill).backgroundColor !== getComputedStyle(line).outlineColor;
       line.classList.toggle('up-on-warning', warning);
     });
   }
 
+  // Context -----------------------------------------------------------------
+
+  // Claude moved the session's context usage and "Compact session" out of
+  // this popover into the Context card of the session rail, right of the
+  // conversation. The card stays mounted while collapsed and marks its
+  // headline with data-rail-context-summary and data-rail-context-pct, so the
+  // popover mirrors it above the limits, with a button that presses the
+  // card's own. With the rail hidden, the button shows the rail instead.
+  const COMPACT = /^(Compact session|Sitzung komprimieren)$/i;
+  const SHOW_RAIL = 'button[aria-label="Show session rail"], button[aria-label="Sitzungsleiste anzeigen"]';
+
+  function railContext() {
+    const summary = document.querySelector('section [data-rail-context-summary]');
+    if (!summary) return null;
+    const pct = Number(summary.getAttribute('data-rail-context-pct') ?? NaN);
+    const compact = [...summary.closest('section').querySelectorAll('button')]
+      .find((button) => COMPACT.test(button.textContent.trim())) ?? null;
+    return { text: summary.textContent.trim(), pct: Number.isFinite(pct) ? clamp(pct, 0, 100) : null, compact };
+  }
+
+  // Same markup and classes as the rows of Claude's popover; only the bar is
+  // drawn by widget.css.
+  function buildContext() {
+    const block = element('div', 'up-context flex flex-col gap-xs');
+    const head = element('div', 'flex items-baseline justify-between gap-sm text-body');
+    head.append(
+      element('span', 'up-context-title min-w-0 font-medium text-primary'),
+      element('span', 'up-context-value shrink-0 whitespace-nowrap text-footnote tabular-nums text-muted-as-secondary'),
+    );
+    const track = element('div', 'up-context-track');
+    track.append(element('div', 'up-context-fill'));
+    const foot = element('div', 'up-context-foot text-footnote text-muted-as-secondary');
+    foot.append(
+      element('span', 'up-context-caption'),
+      linkButton('up-context-action', '', () => {
+        const context = railContext();
+        (context ? context.compact : document.querySelector(SHOW_RAIL))?.click();
+      }),
+    );
+    block.append(head, track, foot);
+    return block;
+  }
+
+  function setText(node, text) {
+    if (node.textContent !== text) node.textContent = text;
+  }
+
+  function setHidden(node, hidden) {
+    if (node.hidden !== hidden) node.hidden = hidden;
+  }
+
+  function syncContext(host) {
+    let block = host.querySelector(':scope > .up-context');
+    const context = railContext();
+    const showRail = context ? null : document.querySelector(SHOW_RAIL);
+    if (!context && !showRail) {
+      block?.remove();
+      return;
+    }
+    if (!block) block = buildContext();
+    if (host.firstElementChild !== block) host.prepend(block);
+
+    const text = strings();
+    const pct = context?.pct ?? null;
+    const percent = pct === null
+      ? ''
+      : new Intl.NumberFormat(document.documentElement.lang || undefined, { style: 'percent', maximumFractionDigits: 0 }).format(pct / 100);
+    setText(block.querySelector('.up-context-title'), text.context);
+    setText(block.querySelector('.up-context-value'), pct === null ? (context?.text ?? '') : text.used(percent));
+    setText(block.querySelector('.up-context-caption'), pct === null ? '' : context.text);
+    const track = block.querySelector('.up-context-track');
+    setHidden(track, pct === null);
+    const fill = track.firstElementChild;
+    const width = (pct ?? 0) + '%';
+    if (fill.style.width !== width) fill.style.width = width;
+    if (fill.classList.contains('up-context-full') !== pct >= 80) fill.classList.toggle('up-context-full');
+
+    const action = block.querySelector('.up-context-action');
+    setText(action, context ? (context.compact?.textContent.trim() || text.compact) : text.showRail);
+    setHidden(action, Boolean(context) && !context.compact);
+    const disabled = Boolean(context?.compact?.disabled);
+    if (action.disabled !== disabled) action.disabled = disabled;
+  }
+
   // Data --------------------------------------------------------------------
 
+  // Without usage (signed out, or an account without plan limits) both
+  // places drop what they showed.
   function render() {
-    view = buildView(usage, Date.now(), language(), document.documentElement.lang || undefined) ?? view;
-    if (!view) return;
+    view = buildView(usage, Date.now(), language(), document.documentElement.lang || undefined);
     version += 1;
-    renderSidebar();
+    if (view) renderSidebar();
     place();
     enhancePopover();
   }
@@ -458,20 +603,50 @@
     return response.ok ? response.json() : null;
   }
 
-  async function organizationId() {
+  let organization = null;
+
+  async function usageOf(id) {
+    const response = await fetchJson('/api/organizations/' + encodeURIComponent(id) + '/usage');
+    return Array.isArray(response?.limits) || response?.five_hour || response?.seven_day ? response : null;
+  }
+
+  // The lastActiveOrg cookie names the organization Claude shows, but right
+  // after switching accounts it can still name the previous account's, whose
+  // usage this account may not read. Then the organization that answered
+  // last, and otherwise the first of this account's organizations with plan
+  // limits (an API-only organization has none), stands in. Resolves to null
+  // when none of them has usage; a network error rejects instead, so the
+  // last numbers stay up.
+  async function fetchUsage() {
     const fromCookie = document.cookie.match(/(?:^|;\s*)lastActiveOrg=([^;]+)/)?.[1];
-    if (fromCookie) return decodeURIComponent(fromCookie);
+    const tried = new Set();
+    for (const id of [fromCookie && decodeURIComponent(fromCookie), organization]) {
+      if (!id || tried.has(id)) continue;
+      tried.add(id);
+      const result = await usageOf(id);
+      if (result) {
+        organization = id;
+        return result;
+      }
+    }
     const organizations = await fetchJson('/api/organizations');
-    return organizations?.[0]?.uuid ?? null;
+    for (const { uuid } of Array.isArray(organizations) ? organizations : []) {
+      if (!uuid || tried.has(uuid)) continue;
+      const result = await usageOf(uuid);
+      if (result) {
+        organization = uuid;
+        return result;
+      }
+    }
+    organization = null;
+    return null;
   }
 
   async function refresh() {
     clearTimeout(timer);
     if (!document.hidden) {
       try {
-        const organization = await organizationId();
-        const next = organization && await fetchJson('/api/organizations/' + encodeURIComponent(organization) + '/usage');
-        if (next) usage = next;
+        usage = await fetchUsage();
       } catch {}
       render();
     }
@@ -488,6 +663,9 @@
       place();
     }, 250);
   }).observe(document.body, { childList: true, subtree: true });
+  // The rail's context headline and its Compact button change in place.
+  new MutationObserver(enhancePopover)
+    .observe(document.body, { subtree: true, characterData: true, attributeFilter: ['data-rail-context-pct', 'disabled'] });
 
   // Follow Claude's language setting right away.
   new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });

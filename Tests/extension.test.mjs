@@ -40,9 +40,19 @@ test('sidebar row, popover time lines and settings', { timeout: 40_000 }, async 
 
   const { popover } = steps.POPOVER;
   assert.equal(popover.pace, '16% over pace');
-  assert.deepEqual(popover.lines, [true, true, true]);
+  assert.equal(popover.paceBeforeIcons, 'usage-icons', 'the pace sits next to the header icons');
+  assert.deepEqual(popover.lines, [true, true], 'rows are matched by title, "Weekly" included');
   assert.equal(popover.overLines, 1);
-  assert.deepEqual(popover.onWarning, [false, true, false], 'red only where Claude\'s own bar left its accent color');
+  assert.deepEqual(popover.onWarning, [false, true], 'red only where Claude\'s own meter left its accent color');
+  assert.equal(popover.settingsParent, 'usage-rows', 'the settings row shares the inset of the limits');
+  assert.equal(popover.context, 'Context 37% used 74k / 200k Compact session', 'the session rail\'s context shows above the limits');
+  assert.equal(popover.contextFirst, true);
+  assert.equal(popover.contextWidth, '37%');
+
+  assert.equal(steps.COMPACTED.popover.compacted, 1, 'the button presses the rail\'s own Compact button');
+  assert.equal(steps.COMPACTED.mutations, 0);
+  assert.equal(steps.CONTEXT_CHANGED.popover.context, 'Context 85% used 170k / 200k Compact session', 'follows the rail as it changes');
+  assert.equal(steps.CONTEXT_CHANGED.popover.contextWidth, '85%');
   assert.deepEqual(popover.settings, ['sidebar:true', 'popover:true']);
   assert.equal(popover.settingsText, 'Usage Pace Sidebar Popover Uninstall…');
   assert.equal(steps.POPOVER.mutations, 0, 'enhancing the popover does not retrigger itself');
@@ -51,16 +61,21 @@ test('sidebar row, popover time lines and settings', { timeout: 40_000 }, async 
   assert.equal(steps.COLLAPSED.sidebar.header, 'Usage 16% over pace');
 
   assert.equal(steps.POPOVER_OFF.popover.pace, null);
-  assert.deepEqual(steps.POPOVER_OFF.popover.lines, [false, false, false]);
+  assert.deepEqual(steps.POPOVER_OFF.popover.lines, [false, false]);
+  assert.equal(steps.POPOVER_OFF.popover.context, null);
   assert.deepEqual(steps.POPOVER_OFF.popover.settings, ['sidebar:true', 'popover:false']);
 
   assert.equal(steps.SIDEBAR_OFF.sidebar, null);
 
   assert.equal(steps.RELOADED.sidebar, null, 'settings survive a reload');
-  assert.deepEqual(steps.RELOADED.popover.lines, [false, false, false]);
+  assert.deepEqual(steps.RELOADED.popover.lines, [false, false]);
   assert.deepEqual(steps.RELOADED.popover.settings, ['sidebar:false', 'popover:false']);
 
   assert.equal(steps.SIDEBAR_ON.sidebar.header, 'Usage 16% over pace');
+
+  assert.equal(steps.SWITCHED.sidebar?.header, 'Usage 4% under pace', 'a stale lastActiveOrg cookie falls back to the new account\'s organization with limits');
+  assert.equal(steps.SIGNED_OUT.sidebar, null, 'without usage the previous account\'s numbers disappear');
+  assert.equal(steps.SWITCHED_BACK.sidebar?.header, 'Usage 16% over pace');
 
   const confirm = steps.CONFIRM;
   assert.equal(confirm.popover.settingsText, 'Remove Usage Pace from Claude? Cancel Remove', '"Uninstall…" asks first');
@@ -80,6 +95,6 @@ test('sidebar row, popover time lines and settings', { timeout: 40_000 }, async 
   const after = steps.AFTER_UNINSTALL;
   assert.equal(after.sidebar, null, 'stays hidden after a reload');
   assert.equal(after.popover.settingsRows, 0);
-  assert.deepEqual(after.popover.lines, [false, false, false]);
+  assert.deepEqual(after.popover.lines, [false, false]);
   assert.equal(after.popover.pace, null);
 });

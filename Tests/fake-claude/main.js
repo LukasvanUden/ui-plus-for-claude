@@ -10,29 +10,45 @@ const PAGE = `<!doctype html><html lang="en" style="--cds-fill-accent:#2a78d6"><
   <div><a>Artifacts</a><a>Customize</a><button id="more" aria-expanded="false" class="nav-row"><span data-cds="Icon" aria-hidden="true" style="font-size:16px">&#xe000;</span><span class="text-muted">More</span></button></div>
   <div class="dframe-recents-by-mode"><div class="df-label-inset"><button><span>Projects</span></button></div><ul><li>Booking UI</li></ul></div>
 </div>
+<aside><section><span data-rail-context-summary data-rail-context-pct="37">74k / 200k</span><button onclick="window.compacted = (window.compacted ?? 0) + 1">Compact session</button></section></aside>
 <div id="portal-root"></div>
 </body></html>`;
 
-const POPOVER = `<div data-cds="Popover" role="dialog"><div>
-  <div class="usage-header"><span class="text-footnote text-muted">Plan usage limits · Max (20x)</span><a href="/settings/usage">→</a></div>
-  <div class="usage-list">
-    ${['Session limit', 'Weekly · all models', 'Weekly · Fable'].map((label, index) => `
-      <div><div><span id="limit-${index}">${label}</span><span>1%</span></div>
-      <div role="progressbar" aria-labelledby="limit-${index}" style="margin-top:4px;height:4px"><div style="height:100%;width:1%;background:${index === 1 ? '#f5b83d' : 'var(--cds-fill-accent)'}"></div></div></div>`).join('')}
-  </div>
+// Like Claude's, the popover shows fewer rows than the usage API returns and
+// calls the weekly limit for all models just "Weekly".
+const POPOVER = `<div data-cds="Popover" role="dialog"><div style="display:flex;flex-direction:column">
+  <div class="usage-header" style="display:flex;justify-content:space-between"><span aria-hidden="true">Usage</span><span class="usage-icons"><button aria-label="See breakdown">#</button><a href="/settings/usage" aria-label="Usage settings">○</a></span></div>
+  <div role="group" aria-label="Usage limits"><div class="usage-rows" style="display:flex;flex-direction:column;gap:12px;padding:0 16px">
+    ${['Session limit', 'Weekly'].map((label, index) => `
+      <div style="display:flex;flex-direction:column;gap:4px"><div><span id="limit-${index}">${label}</span><span>1% used</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div data-cds="Meter" data-variant="${index === 1 ? 'warning' : 'accent'}"><div role="meter" aria-labelledby="limit-${index}" style="height:4px"><div data-usage-bar-fill style="height:100%;width:1%"></div></div></div>
+        <span id="caption-${index}">Resets in 4 hr</span>
+      </div></div>`).join('')}
+  </div></div>
 </div></div>`;
 
-function usage() {
+function usage(weekly = 30) {
   const at = (ms) => new Date(Date.now() + ms).toISOString();
   const week = at(6 * 86_400_000);
   return {
     limits: [
       { kind: 'session', percent: 9, resets_at: at((4 * 60 + 17) * 60_000) },
-      { kind: 'weekly_all', percent: 30, resets_at: week },
+      { kind: 'weekly_all', percent: weekly, resets_at: week },
       { kind: 'weekly_scoped', scope: { model: { display_name: 'Fable' } }, percent: 4, resets_at: week },
     ],
   };
 }
+
+// Who is signed in. The lastActiveOrg cookie keeps naming org-active after
+// switching to the second account, as it can in Claude; that account's
+// first organization is API-only and has no plan limits.
+const ACCOUNTS = {
+  first: { organizations: [{ uuid: 'org-other' }], usage: { 'org-active': usage } },
+  second: { organizations: [{ uuid: 'org-api' }, { uuid: 'org-second' }], usage: { 'org-api': () => ({}), 'org-second': () => usage(10) } },
+  none: { organizations: [], usage: {} },
+};
+let account = ACCOUNTS.first;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -62,7 +78,13 @@ function state(contents) {
       } : null,
       popover: popover && {
         pace: popover.querySelector('.up-popover-pace')?.textContent ?? null,
-        lines: [...popover.querySelectorAll('[role="progressbar"]')].map((bar) => bar.previousElementSibling.classList.contains('up-time')),
+        lines: [...popover.querySelectorAll('[role="meter"]')].map((bar) => bar.closest('[data-cds="Meter"]').previousElementSibling?.classList.contains('up-time') ?? false),
+        paceBeforeIcons: popover.querySelector('.up-popover-pace')?.nextElementSibling?.className ?? null,
+        context: popover.querySelector('.up-context') && [...popover.querySelectorAll('.up-context span, .up-context button')].map((node) => node.textContent).join(' '),
+        contextFirst: popover.querySelector('.usage-rows')?.firstElementChild.classList.contains('up-context') ?? false,
+        contextWidth: popover.querySelector('.up-context-fill')?.style.width ?? null,
+        compacted: window.compacted ?? 0,
+        settingsParent: popover.querySelector('.up-settings')?.parentElement.className ?? null,
         overLines: popover.querySelectorAll('.up-in-popover .up-segment-over').length,
         onWarning: [...popover.querySelectorAll('.up-in-popover')].map((line) => line.classList.contains('up-on-warning')),
         settings: [...popover.querySelectorAll('.up-settings input')].map((input) => input.dataset.setting + ':' + input.checked),
@@ -89,8 +111,10 @@ app.whenReady().then(async () => {
   // /api/organizations lists another one to prove the cookie wins.
   protocol.handle('https', (request) => {
     const { pathname } = new URL(request.url);
-    if (pathname === '/api/organizations/org-active/usage') return Response.json(usage());
-    if (pathname === '/api/organizations') return Response.json([{ uuid: 'org-other' }]);
+    const usageOf = account.usage[/^\/api\/organizations\/([^/]+)\/usage$/.exec(pathname)?.[1]];
+    if (usageOf) return Response.json(usageOf());
+    if (pathname.endsWith('/usage')) return new Response('forbidden', { status: 403 });
+    if (pathname === '/api/organizations') return Response.json(account.organizations);
     if (pathname.startsWith('/api/')) return new Response('not found', { status: 404 });
     return new Response(PAGE, { headers: { 'content-type': 'text/html' } });
   });
@@ -105,6 +129,8 @@ app.whenReady().then(async () => {
 
   await step(contents, 'LOADED');
   await step(contents, 'POPOVER', `document.getElementById('portal-root').innerHTML = ${JSON.stringify(POPOVER)}`);
+  await step(contents, 'COMPACTED', `document.querySelector('.up-context-action').click()`);
+  await step(contents, 'CONTEXT_CHANGED', `const summary = document.querySelector('[data-rail-context-summary]'); summary.setAttribute('data-rail-context-pct', '85'); summary.firstChild.nodeValue = '170k / 200k'`);
   await step(contents, 'COLLAPSED', `document.querySelector('#usage-pace .up-header').click()`);
   await step(contents, 'POPOVER_OFF', `document.querySelector('.up-settings input[data-setting="popover"]').click()`);
   await step(contents, 'SIDEBAR_OFF', `document.querySelector('.up-settings input[data-setting="sidebar"]').click()`);
@@ -112,6 +138,14 @@ app.whenReady().then(async () => {
   await delay(1000);
   await step(contents, 'RELOADED', `document.getElementById('portal-root').innerHTML = ${JSON.stringify(POPOVER)}`);
   await step(contents, 'SIDEBAR_ON', `document.querySelector('.up-settings input[data-setting="sidebar"]').click()`);
+  // Switching accounts without a reload: Claude's tab becomes visible again.
+  const refresh = `document.dispatchEvent(new Event('visibilitychange'))`;
+  account = ACCOUNTS.second;
+  await step(contents, 'SWITCHED', refresh);
+  account = ACCOUNTS.none;
+  await step(contents, 'SIGNED_OUT', refresh);
+  account = ACCOUNTS.first;
+  await step(contents, 'SWITCHED_BACK', refresh);
   await step(contents, 'CONFIRM', `document.querySelector('.up-uninstall').click()`);
   await step(contents, 'CANCELLED', `document.querySelector('.up-confirm-cancel').click()`);
   await step(contents, 'UNINSTALLED', `document.querySelector('.up-uninstall').click(); document.querySelector('.up-confirm-remove').click()`);
