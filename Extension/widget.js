@@ -11,6 +11,12 @@
   const WINDOW_MS = { session: 5 * HOUR_MS, weekly_all: 7 * 24 * HOUR_MS, weekly_scoped: 7 * 24 * HOUR_MS };
   const ON_PACE_POINTS = 3;
   const POLL_MS = 60_000;
+  // Until there is usage to show (signing in, switching accounts), ask sooner.
+  const RETRY_MS = 5_000;
+  // A request that hangs, as one can while Claude switches accounts, must not
+  // stop the polling.
+  const FETCH_TIMEOUT_MS = 15_000;
+  const ACCOUNT_CHECK_MS = 2_000;
   const NAME = 'Usage Pace';
   const GAUGE_PATHS = ['M3.8 14.2a6.8 6.8 0 1 1 12.4 0', 'M10 11.2l3.2-3.4'];
 
@@ -646,7 +652,7 @@
   }
 
   async function fetchJson(path) {
-    const response = await fetch(path, { credentials: 'include' });
+    const response = await fetch(path, { credentials: 'include', signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     return response.ok ? response.json() : null;
   }
 
@@ -665,9 +671,8 @@
   // when none of them has usage; a network error rejects instead, so the
   // last numbers stay up.
   async function fetchUsage() {
-    const fromCookie = document.cookie.match(/(?:^|;\s*)lastActiveOrg=([^;]+)/)?.[1];
     const tried = new Set();
-    for (const id of [fromCookie && decodeURIComponent(fromCookie), organization]) {
+    for (const id of [cookieOrganization(), organization]) {
       if (!id || tried.has(id)) continue;
       tried.add(id);
       const result = await usageOf(id);
@@ -689,15 +694,37 @@
     return null;
   }
 
+  function cookieOrganization() {
+    const value = document.cookie.match(/(?:^|;\s*)lastActiveOrg=([^;]+)/)?.[1];
+    return value ? decodeURIComponent(value) : null;
+  }
+
+  // One request at a time; a refresh asked for meanwhile runs right after.
+  let refreshing = false;
+  let refreshAgain = false;
+
   async function refresh() {
-    clearTimeout(timer);
-    if (!document.hidden) {
-      try {
-        usage = await fetchUsage();
-      } catch {}
-      render();
+    if (refreshing) {
+      refreshAgain = true;
+      return;
     }
-    timer = setTimeout(refresh, POLL_MS);
+    refreshing = true;
+    clearTimeout(timer);
+    try {
+      if (!document.hidden) {
+        try {
+          usage = await fetchUsage();
+        } catch {}
+        render();
+      }
+    } finally {
+      refreshing = false;
+      timer = setTimeout(refresh, usage ? POLL_MS : RETRY_MS);
+      if (refreshAgain) {
+        refreshAgain = false;
+        refresh();
+      }
+    }
   }
 
   // React re-renders the sidebar and mounts the popover on demand. The
@@ -717,5 +744,14 @@
   // Follow Claude's language setting right away.
   new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   document.addEventListener('visibilitychange', () => document.hidden || refresh());
+  // Switching accounts changes the lastActiveOrg cookie, often without
+  // reloading the page.
+  let accountCookie = cookieOrganization();
+  setInterval(() => {
+    const current = cookieOrganization();
+    if (current === accountCookie) return;
+    accountCookie = current;
+    refresh();
+  }, ACCOUNT_CHECK_MS);
   refresh();
 })();

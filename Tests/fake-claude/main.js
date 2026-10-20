@@ -107,9 +107,9 @@ function state(contents) {
   })()`);
 }
 
-async function step(contents, name, script) {
+async function step(contents, name, script, wait = 400) {
   if (script) await contents.executeJavaScript(script);
-  await delay(400);
+  await delay(wait);
   console.log(name + ' ' + JSON.stringify(await state(contents)));
 }
 
@@ -152,14 +152,21 @@ app.whenReady().then(async () => {
   await delay(1000);
   await step(contents, 'RELOADED', `document.getElementById('portal-root').innerHTML = ${JSON.stringify(POPOVER)}`);
   await step(contents, 'SIDEBAR_ON', `document.querySelector('.up-settings input[data-setting="sidebar"]').click()`);
-  // Switching accounts without a reload: Claude's tab becomes visible again.
-  const refresh = `document.dispatchEvent(new Event('visibilitychange'))`;
+  // Switching accounts without a reload. The extension notices the
+  // lastActiveOrg cookie changing, here to the new account's API-only
+  // organization, which has no plan limits.
+  const organization = (value) => session.defaultSession.cookies.set({ url: 'https://claude.ai', name: 'lastActiveOrg', value });
   account = ACCOUNTS.second;
-  await step(contents, 'SWITCHED', refresh);
+  await organization('org-api');
+  await step(contents, 'SWITCHED', null, 3000);
   account = ACCOUNTS.none;
-  await step(contents, 'SIGNED_OUT', refresh);
+  await step(contents, 'SIGNED_OUT', `document.dispatchEvent(new Event('visibilitychange'))`);
+  // Signing in again while the cookie still names the first account's
+  // organization: without usage, the extension asks again within seconds.
+  await organization('org-active');
+  await delay(2500);
   account = ACCOUNTS.first;
-  await step(contents, 'SWITCHED_BACK', refresh);
+  await step(contents, 'SWITCHED_BACK', null, 6000);
   await step(contents, 'CONFIRM', `document.querySelector('.up-uninstall').click()`);
   await step(contents, 'CANCELLED', `document.querySelector('.up-confirm-cancel').click()`);
   await step(contents, 'UNINSTALLED', `document.querySelector('.up-uninstall').click(); document.querySelector('.up-confirm-remove').click()`);
