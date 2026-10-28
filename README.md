@@ -2,6 +2,20 @@
 
 Your Claude plan usage, always visible in the sidebar of the Claude desktop app, with how far through each limit window you are.
 
+**Install with an agent:** copy this prompt into Claude Code (or any agent that can run commands on your Mac):
+
+```text
+Install Usage Pace for Claude (https://github.com/LukasvanUden/usage-pace-for-claude) on this Mac by running:
+
+curl -fL -o /tmp/Usage-Pace.dmg https://github.com/LukasvanUden/usage-pace-for-claude/releases/latest/download/Usage-Pace.dmg
+hdiutil attach -nobrowse -quiet /tmp/Usage-Pace.dmg
+ditto "/Volumes/Usage Pace/Usage Pace.app" "/Applications/Usage Pace.app"
+hdiutil detach -quiet "/Volumes/Usage Pace"
+"/Applications/Usage Pace.app/Contents/Resources/Usage Pace" install
+
+Do not quit the Claude app yourself. When done, tell me to quit Claude with Cmd+Q and open it again.
+```
+
 A **Usage** row below **More** shows how far above or below pace your weekly usage is, e.g. "20% under pace". Click it to show or hide the bars:
 
 <picture>
