@@ -46,3 +46,40 @@
 .up-context-action { margin-left: auto; white-space: nowrap; color: var(--cds-text-secondary, currentColor); }
 .up-context-action[hidden] { display: none; }
 .up-context-action:disabled { opacity: .5; cursor: default; text-decoration: none; }
+
+/* Sessions in the sidebar: a gear in place of the icon of active rows,
+   turning while Claude works, still and dimmed with a badge when the session
+   waits, is ready or failed. Other session rows show no icon, keeping the
+   space so titles line up. Claude's own status marks give way to these. */
+[data-up-session] > .df-leading-slot { position: relative; }
+[data-up-session] > .df-leading-slot > * { visibility: hidden; }
+[data-up-session]:not([data-up-session="idle"]) > .df-leading-slot::before {
+  content: ''; position: absolute; inset: 0; margin: auto; width: var(--df-icon-size, 16px); height: var(--df-icon-size, 16px);
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+[data-up-session="running"] > .df-leading-slot::before { color: var(--cds-text-primary, currentColor); animation: up-spin 2.4s linear infinite; }
+[data-up-session]:is([data-up-session="awaiting"], [data-up-session="ready"], [data-up-session="error"]) > .df-leading-slot::before { color: var(--cds-text-muted, currentColor); opacity: .6; }
+/* On an active row, Claude's mark at its end shows the state the badge now
+   shows, drawn as a .status-dot or as a plain colored dot. Claude wraps the
+   row's link, so its decoration is no sibling of it. */
+[data-up-session]:not([data-up-session="idle"]) .df-tail-mark,
+div[data-row]:has([data-up-session]:not([data-up-session="idle"])) [data-row-decoration] { display: none; }
+:is([data-up-session], div[data-row]:has([data-up-session])) .status-dot { visibility: hidden; }
+[data-up-session="awaiting"] { --up-state: var(--cds-fill-warning, #e0a23a); }
+[data-up-session="ready"] { --up-state: var(--cds-fill-accent, #2a78d6); }
+[data-up-session="error"] { --up-state: var(--cds-fill-danger, #e5484d); }
+[data-up-badge]::after {
+  content: attr(data-up-badge); flex-shrink: 0; margin-inline-start: 6px; padding: 1px 7px; border-radius: 99px;
+  font-size: 11px; font-weight: 500; line-height: 16px; white-space: nowrap;
+  color: var(--up-state); background: color-mix(in srgb, var(--up-state) 16%, transparent);
+}
+/* Claude's row buttons appear at the end of the row on hover. */
+div[data-row]:is(:hover, [data-menu-open], :has(:focus-visible)) [data-up-badge]::after { visibility: hidden; }
+/* The gear shows a session at work, so its title stays plain: no shimmer,
+   neither the fallback gradient nor the composited clone on top. */
+[data-up-session] [data-cds="ShimmerText"] { -webkit-text-fill-color: currentColor !important; background: none !important; animation: none !important; }
+[data-up-session] [data-cds-shimmer-clone] { display: none !important; }
+@keyframes up-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { [data-up-session="running"] > .df-leading-slot::before { animation: none; } }
+[data-reduce-motion="true"] [data-up-session="running"] > .df-leading-slot::before { animation: none; }

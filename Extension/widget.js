@@ -3,8 +3,10 @@
 // collapsible "Usage" row below "More" in the sidebar, and Claude's own usage
 // popover. Above each usage bar, a time line shows how far the window has
 // progressed: grey where usage and time agree, then green for time still
-// ahead of usage, or orange for usage ahead of time. A settings row in the
-// popover turns either place on or off.
+// ahead of usage, or orange for usage ahead of time. Active sessions in the
+// sidebar get a gear in place of their icon, turning while Claude works, and
+// a badge when they need you. A settings row in the popover turns each of
+// these on or off.
 (function () {
   const WIDGET_ID = 'usage-pace';
   const HOUR_MS = 3_600_000;
@@ -32,6 +34,8 @@
       onPace: 'On pace',
       sidebar: 'Sidebar',
       popover: 'Popover',
+      sessions: 'Sessions',
+      badges: { awaiting: 'Waiting', ready: 'Ready', error: 'Error' },
       uninstall: 'Uninstall…',
       context: 'Context',
       used: (percent) => percent + ' used',
@@ -53,6 +57,8 @@
       onPace: 'Im Plan',
       sidebar: 'Seitenleiste',
       popover: 'Popover',
+      sessions: 'Sitzungen',
+      badges: { awaiting: 'Wartet', ready: 'Fertig', error: 'Fehler' },
       uninstall: 'Entfernen…',
       context: 'Kontext',
       used: (percent) => percent + ' genutzt',
@@ -153,7 +159,7 @@
     }
   })();
 
-  const settings = { sidebar: stored('sidebar') !== '0', popover: stored('popover') !== '0' };
+  const settings = { sidebar: stored('sidebar') !== '0', popover: stored('popover') !== '0', sessions: stored('sessions') !== '0' };
   let removed = stored('removed') === INSTALL_ID;
   let collapsed = stored('collapsed') === '1';
   let usage = null;
@@ -399,12 +405,13 @@
     row.replaceChildren(element('span', null, strings().removed));
     place();
     enhancePopover();
+    markSessions();
   }
 
   function buildSettings() {
     const row = element('div', 'up-settings');
     row.append(element('span', 'up-settings-name', NAME));
-    for (const name of ['sidebar', 'popover']) {
+    for (const name of ['sidebar', 'popover', 'sessions']) {
       const toggle = element('label', 'up-toggle');
       const input = element('input');
       input.type = 'checkbox';
@@ -415,6 +422,7 @@
         store(name, input.checked);
         place();
         enhancePopover();
+        markSessions();
       });
       toggle.append(input, element('span', null, strings()[name]));
       row.append(toggle);
@@ -639,6 +647,67 @@
     if (action.disabled !== disabled) action.disabled = disabled;
   }
 
+  // Sessions ----------------------------------------------------------------
+
+  // Claude shows a session's state in its sidebar row in one of several
+  // ways, depending on the version: a .status-dot named by data-kind (in the
+  // icon's corner or at the end of the row), data-attention on the title, or
+  // a status icon for errors and browsing. Each session row gets
+  // data-up-session with that state; widget.css puts a gear in place of the
+  // icon of active rows, turning while Claude works, and hides the icon of
+  // the others. data-up-badge names what an active row needs.
+  const DOT_KINDS = { running: 'running', clay: 'running', awaiting: 'awaiting', ready: 'ready', unread: 'ready', error: 'error' };
+  const ATTENTION = { working: 'running', waiting: 'awaiting', unread: 'ready' };
+  const AWAITING_LABEL = /await|input|answer|wartet|eingabe|antwort/i;
+
+  function sessionState(row) {
+    const dot = DOT_KINDS[row.querySelector('.status-dot[data-kind]')?.dataset.kind];
+    if (dot) return dot;
+    const attention = ATTENTION[row.querySelector('[data-attention]')?.dataset.attention];
+    if (attention) return attention;
+    if (row.querySelector('.df-leading-slot .absolute > [data-cds="Icon"]')) return 'error';
+    for (const status of row.querySelectorAll('[role="status"][aria-label]')) {
+      const icon = status.querySelector('[data-cds="Icon"]');
+      if (!icon) continue;
+      if (/animate-pulse/.test(icon.getAttribute('class'))) return 'running';
+      return AWAITING_LABEL.test(status.getAttribute('aria-label')) ? 'awaiting' : 'error';
+    }
+    return null;
+  }
+
+  function setAttribute(node, name, value) {
+    if (value === null) node.removeAttribute(name);
+    else if (node.getAttribute(name) !== value) node.setAttribute(name, value);
+  }
+
+  function markSessions() {
+    const scope = !removed && settings.sessions ? document.querySelector('.dframe-nav-scroll') : null;
+    for (const row of document.querySelectorAll('[data-up-session]')) {
+      if (!scope?.contains(row)) {
+        row.removeAttribute('data-up-session');
+        row.removeAttribute('data-up-badge');
+      }
+    }
+    if (!scope) return;
+    const badges = strings().badges;
+    // Session rows: rows of the sidebar other than its navigation, with an icon.
+    for (const main of scope.querySelectorAll('[data-row-main-button]:not([data-row-nav])')) {
+      if (!main.querySelector(':scope > .df-leading-slot')) continue;
+      const state = sessionState(main.closest('[data-row]') ?? main);
+      setAttribute(main, 'data-up-session', state ?? 'idle');
+      setAttribute(main, 'data-up-badge', badges[state] ?? null);
+    }
+  }
+
+  let marking = null;
+
+  function scheduleMarkSessions() {
+    marking ??= requestAnimationFrame(() => {
+      marking = null;
+      markSessions();
+    });
+  }
+
   // Data --------------------------------------------------------------------
 
   // Without usage (signed out, or an account without plan limits) both
@@ -649,6 +718,7 @@
     if (view) renderSidebar();
     place();
     enhancePopover();
+    markSessions();
   }
 
   async function fetchJson(path) {
@@ -731,6 +801,7 @@
   // popover is enhanced before it paints; the sidebar is re-placed shortly after.
   new MutationObserver(() => {
     enhancePopover();
+    scheduleMarkSessions();
     if (scheduled) return;
     scheduled = setTimeout(() => {
       scheduled = null;
@@ -740,6 +811,9 @@
   // The rail's context headline and its Compact button change in place.
   new MutationObserver(enhancePopover)
     .observe(document.body, { subtree: true, characterData: true, attributeFilter: ['data-rail-context-pct', 'disabled'] });
+  // A row's state changes in place too.
+  new MutationObserver(scheduleMarkSessions)
+    .observe(document.body, { subtree: true, attributeFilter: ['data-kind', 'data-attention', 'aria-label'] });
 
   // Follow Claude's language setting right away.
   new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });

@@ -110,14 +110,25 @@ button { font: inherit; color: inherit; }
   color: var(--cds-text-muted);
 }
 .recents { margin: 0; padding: 0; list-style: none; }
-.recents li {
-  padding: 7px 10px;
+.session-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 10px;
   border-radius: 8px;
   color: var(--cds-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-decoration: none;
 }
+.session-row:hover { background: var(--cds-alpha-1); }
+.df-leading-slot { display: inline-flex; width: 18px; justify-content: center; --df-icon-size: 16px; }
+.session-icon { position: relative; display: inline-flex; font-size: 16px; color: var(--cds-text-muted); }
+.session-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Claude's status dot */
+.status-dot { position: absolute; top: 0; right: -2px; width: 6px; height: 6px; border-radius: 50%; }
+.status-dot[data-kind=running] { background: var(--cds-text-muted); }
+.status-dot[data-kind=awaiting] { background: var(--cds-fill-warning); }
+.status-dot[data-kind=ready] { background: var(--cds-fill-accent); }
 
 .conversation {
   position: relative;

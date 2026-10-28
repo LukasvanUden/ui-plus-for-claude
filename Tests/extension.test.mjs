@@ -20,7 +20,7 @@ async function runFakeClaude() {
   return steps;
 }
 
-test('sidebar row, popover time lines and settings', { timeout: 40_000 }, async () => {
+test('sidebar row, popover time lines and settings', { timeout: 60_000 }, async () => {
   const steps = await runFakeClaude();
 
   const { sidebar } = steps.LOADED;
@@ -37,6 +37,25 @@ test('sidebar row, popover time lines and settings', { timeout: 40_000 }, async 
   assert.match(sidebar.text, /Session limit\s+4 hr 1\d min · 9%/);
   assert.match(sidebar.text, /Weekly · Fable/);
   assert.equal(steps.LOADED.mutations, 0, 'the page settles once the widget is in place');
+  assert.deepEqual(steps.LOADED.sessions, [
+    'running turning icon-hidden',
+    'awaiting still icon-hidden Waiting',
+    'ready still icon-hidden Ready',
+    'error still icon-hidden Error',
+    'idle no-gear icon-hidden',
+    '- no-gear icon-visible',
+  ], 'a gear for active sessions, a badge for those that need you, no icon for the rest; navigation rows stay');
+  assert.equal(steps.LOADED.tailMark, 'none', 'Claude\'s own mark at the end of the row gives way to the badge');
+  assert.equal(steps.LOADED.decoration, 'none', 'also beside a wrapped link');
+  assert.doesNotMatch(steps.LOADED.shimmer, /rgba\(0, 0, 0, 0\)|inline/, 'the title of a working session does not shimmer');
+
+  assert.deepEqual(steps.SESSION_CHANGED.sessions.slice(0, 2), ['ready still icon-hidden Ready', 'running turning icon-hidden'], 'follows state changes in place');
+  assert.deepEqual(steps.SESSIONS_OFF.sessions, Array(5).fill('- no-gear icon-visible').concat('- no-gear icon-visible'));
+  assert.notEqual(steps.SESSIONS_OFF.tailMark, 'none');
+  assert.notEqual(steps.SESSIONS_OFF.decoration, 'none');
+  assert.equal(steps.SESSIONS_OFF.shimmer, 'rgba(0, 0, 0, 0) inline');
+  assert.deepEqual(steps.SESSIONS_OFF.popover.settings, ['sidebar:true', 'popover:true', 'sessions:false']);
+  assert.equal(steps.SESSIONS_ON.sessions[0], 'ready still icon-hidden Ready');
 
   const { popover } = steps.POPOVER;
   assert.equal(popover.pace, '16% over pace');
@@ -67,8 +86,8 @@ test('sidebar row, popover time lines and settings', { timeout: 40_000 }, async 
   assert.equal(steps.COMPACTED.mutations, 0);
   assert.equal(steps.CONTEXT_CHANGED.popover.context, 'Context 85% used 170k / 200k Compact session', 'follows the rail as it changes');
   assert.equal(steps.CONTEXT_CHANGED.popover.contextWidth, '85%');
-  assert.deepEqual(popover.settings, ['sidebar:true', 'popover:true']);
-  assert.equal(popover.settingsText, 'Usage Pace Sidebar Popover Uninstall…');
+  assert.deepEqual(popover.settings, ['sidebar:true', 'popover:true', 'sessions:true']);
+  assert.equal(popover.settingsText, 'Usage Pace Sidebar Popover Sessions Uninstall…');
   assert.equal(steps.POPOVER.mutations, 0, 'enhancing the popover does not retrigger itself');
 
   assert.equal(steps.COLLAPSED.sidebar.rowsVisible, false);
@@ -77,13 +96,13 @@ test('sidebar row, popover time lines and settings', { timeout: 40_000 }, async 
   assert.equal(steps.POPOVER_OFF.popover.pace, null);
   assert.deepEqual(steps.POPOVER_OFF.popover.lines, [false, false]);
   assert.equal(steps.POPOVER_OFF.popover.context, null);
-  assert.deepEqual(steps.POPOVER_OFF.popover.settings, ['sidebar:true', 'popover:false']);
+  assert.deepEqual(steps.POPOVER_OFF.popover.settings, ['sidebar:true', 'popover:false', 'sessions:true']);
 
   assert.equal(steps.SIDEBAR_OFF.sidebar, null);
 
   assert.equal(steps.RELOADED.sidebar, null, 'settings survive a reload');
   assert.deepEqual(steps.RELOADED.popover.lines, [false, false]);
-  assert.deepEqual(steps.RELOADED.popover.settings, ['sidebar:false', 'popover:false']);
+  assert.deepEqual(steps.RELOADED.popover.settings, ['sidebar:false', 'popover:false', 'sessions:true']);
 
   assert.equal(steps.SIDEBAR_ON.sidebar.header, 'Usage 16% over pace');
 
@@ -96,8 +115,8 @@ test('sidebar row, popover time lines and settings', { timeout: 40_000 }, async 
   assert.equal(confirm.sidebar.header, 'Usage 16% over pace', 'nothing is hidden before confirming');
   assert.equal(confirm.mutations, 0);
 
-  assert.equal(steps.CANCELLED.popover.settingsText, 'Usage Pace Sidebar Popover Uninstall…');
-  assert.deepEqual(steps.CANCELLED.popover.settings, ['sidebar:true', 'popover:false']);
+  assert.equal(steps.CANCELLED.popover.settingsText, 'Usage Pace Sidebar Popover Sessions Uninstall…');
+  assert.deepEqual(steps.CANCELLED.popover.settings, ['sidebar:true', 'popover:false', 'sessions:true']);
   assert.equal(steps.CANCELLED.sidebar.header, 'Usage 16% over pace');
 
   const uninstalled = steps.UNINSTALLED;

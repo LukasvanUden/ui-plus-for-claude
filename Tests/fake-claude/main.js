@@ -5,10 +5,28 @@
 const { app, BrowserWindow, protocol, session } = require('electron');
 const path = require('path');
 
+// Session rows in the ways Claude marks their state: a dot in the icon's
+// corner, data-attention on the title, a dot at the end of the row, a warning
+// in the icon's corner, nothing. A navigation row with an icon comes last.
+const ICON = '<span data-cds="Icon" aria-hidden="true" style="font-size:16px">&#xe001;</span>';
+const SESSION_ROWS = [
+  ['Sherine', `<span role="status" aria-label="Running"><span class="relative inline-flex">${ICON}<span class="absolute"><span class="status-dot" data-kind="running"></span></span></span></span>`,
+    '<span data-cds="ShimmerText" data-shimmering="true" style="-webkit-text-fill-color:transparent;background-image:linear-gradient(red,blue);-webkit-background-clip:text">Sherine<span data-cds-shimmer-clone aria-hidden="true">Sherine</span></span>'],
+  ['Siteplan', ICON, '<span class="relative" data-attention="waiting">Siteplan<span role="status" aria-label="Awaiting input" class="sr-only"></span></span>'],
+  ['OTAROS', ICON, 'OTAROS', '<span class="df-tail-mark"><span class="status-dot" data-kind="unread"></span></span>'],
+  ['Otaros Core', `<span class="relative inline-flex">${ICON}<span class="absolute">${ICON}</span></span>`, 'Otaros Core', '', true],
+  ['Content-System', ICON, 'Content-System'],
+];
+// A row with a menu wraps its link and puts the status in a decoration
+// beside it, as a plain colored dot.
+const SESSIONS = SESSION_ROWS.map(([, icon, label, tail = '', decorated = false]) => `<div data-row class="group" style="display:flex">
+  ${decorated ? '<span style="display:flex;flex:1;min-width:0">' : ''}<a data-row-main-button href="#" style="display:flex;align-items:center;gap:8px;flex:1;min-width:0"><span class="df-leading-slot" style="display:flex;width:16px">${icon}</span><span data-row-label style="flex:1;min-width:0">${label}</span>${tail}</a>${decorated ? '</span><span data-row-decoration><span aria-hidden="true" class="flex items-center"><span role="img" aria-label="Error"><span class="contents"><span style="display:block;width:6px;height:6px;border-radius:50%;background:red"></span></span></span></span></span>' : ''}</div>`).join('')
+  + `<a data-row-main-button data-row-nav href="#"><span class="df-leading-slot">${ICON}</span><span data-row-label>New session</span></a>`;
+
 const PAGE = `<!doctype html><html lang="en" style="--cds-fill-accent:#2a78d6"><body style="width:300px;font:14px sans-serif">
 <div class="dframe-nav-scroll">
   <div><a>Artifacts</a><a>Customize</a><button id="more" aria-expanded="false" class="nav-row"><span data-cds="Icon" aria-hidden="true" style="font-size:16px">&#xe000;</span><span class="text-muted">More</span></button></div>
-  <div class="dframe-recents-by-mode"><div class="df-label-inset"><button><span>Projects</span></button></div><ul><li>Booking UI</li></ul></div>
+  <div class="dframe-recents-by-mode"><div class="df-label-inset"><button><span>Projects</span></button></div>${SESSIONS}</div>
 </div>
 <aside><section><span data-rail-context-summary data-rail-context-pct="37">74k / 200k</span><div data-cds="StackedMeter" role="img" aria-label="Context" tabindex="0"><span style="width:30%;background-color:rgb(74, 127, 217)"></span><span style="width:7%;background-color:rgb(208, 96, 58)"></span></div><button onclick="window.compacted = (window.compacted ?? 0) + 1">Compact session</button></section></aside>
 <div id="portal-root"></div>
@@ -79,6 +97,20 @@ function state(contents) {
         buffer: widget.querySelectorAll('.up-in-sidebar .up-segment-buffer').length,
         styled: getComputedStyle(widget.querySelector('.up-track')).position === 'relative',
       } : null,
+      sessions: [...document.querySelectorAll('.dframe-nav-scroll [data-row-main-button]')].map((main) => {
+        const slot = main.querySelector('.df-leading-slot');
+        const gear = getComputedStyle(slot, '::before');
+        const badge = getComputedStyle(main, '::after').content;
+        return [
+          main.dataset.upSession ?? '-',
+          gear.content === 'none' ? 'no-gear' : gear.animationName === 'up-spin' ? 'turning' : 'still',
+          'icon-' + getComputedStyle(slot.firstElementChild).visibility,
+          badge === 'none' ? '' : badge.replace(/"/g, ''),
+        ].join(' ').trim();
+      }),
+      tailMark: getComputedStyle(document.querySelector('.df-tail-mark')).display,
+      decoration: getComputedStyle(document.querySelector('[data-row-decoration]')).display,
+      shimmer: [getComputedStyle(document.querySelector('[data-cds="ShimmerText"]')).webkitTextFillColor, getComputedStyle(document.querySelector('[data-cds-shimmer-clone]')).display].join(' '),
       popover: popover && {
         pace: popover.querySelector('.up-popover-pace')?.textContent ?? null,
         lines: [...popover.querySelectorAll('[role="meter"]')].map((bar) => bar.closest('[data-cds="Meter"]').previousElementSibling?.classList.contains('up-time') ?? false),
@@ -145,6 +177,9 @@ app.whenReady().then(async () => {
   await step(contents, 'CREDITS_GONE', `document.querySelector('.credits').remove()`);
   await step(contents, 'COMPACTED', `document.querySelector('.up-context-action').click()`);
   await step(contents, 'CONTEXT_CHANGED', `const summary = document.querySelector('[data-rail-context-summary]'); summary.setAttribute('data-rail-context-pct', '85'); summary.firstChild.nodeValue = '170k / 200k'`);
+  await step(contents, 'SESSION_CHANGED', `document.querySelector('.status-dot[data-kind="running"]').dataset.kind = 'ready'; document.querySelector('[data-attention]').dataset.attention = 'working'`);
+  await step(contents, 'SESSIONS_OFF', `document.querySelector('.up-settings input[data-setting="sessions"]').click()`);
+  await step(contents, 'SESSIONS_ON', `document.querySelector('.up-settings input[data-setting="sessions"]').click()`);
   await step(contents, 'COLLAPSED', `document.querySelector('#usage-pace .up-header').click()`);
   await step(contents, 'POPOVER_OFF', `document.querySelector('.up-settings input[data-setting="popover"]').click()`);
   await step(contents, 'SIDEBAR_OFF', `document.querySelector('.up-settings input[data-setting="sidebar"]').click()`);

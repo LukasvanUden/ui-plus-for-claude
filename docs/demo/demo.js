@@ -202,7 +202,14 @@
     '<button type="button" class="nav-row"><span data-cds="Icon" aria-hidden="true" class="nav-icon">'
     + icon(ICONS[TEXT.en.nav[index]]) + '</span><span>' + label + '</span></button>').join('');
   document.getElementById('recents-label').textContent = text.recents;
-  document.getElementById('recents').innerHTML = text.chats.map((chat) => '<li>' + chat + '</li>').join('');
+  // Session rows like Claude's, with its status dot in the icon's corner:
+  // running, awaiting input, an unread response, idle.
+  const STATES = ['running', 'awaiting', 'ready', null];
+  document.getElementById('recents').innerHTML = text.chats.map((chat, index) =>
+    '<li data-row class="group"><a data-row-main-button href="#" class="session-row"><span class="df-leading-slot">'
+    + '<span class="session-icon">' + icon('M7 6 3 10l4 4M13 6l4 4-4 4')
+    + (STATES[index] ? '<span class="status-dot" data-kind="' + STATES[index] + '"></span>' : '')
+    + '</span></span><span data-row-label class="session-label">' + chat + '</span></a></li>').join('');
   document.getElementById('composer-placeholder').textContent = text.reply;
 
   // Usage popover, laid out like Claude's ----------------------------------

@@ -26,6 +26,10 @@ When one limit runs out faster than the other:
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/session-tight-popover-dark.png"><img src="docs/screenshots/session-tight-popover-light.png" alt="Popover: session limit at 85%, ahead of time; weekly limit at 40%, behind time" width="392"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/weekly-tight-popover-dark.png"><img src="docs/screenshots/weekly-tight-popover-light.png" alt="Popover: session limit at 30%, behind time; weekly limit at 82%, ahead of time" width="392"></picture> |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/session-tight-sidebar-dark.png"><img src="docs/screenshots/session-tight-sidebar-light.png" alt="Sidebar: the same limits, 20% under pace for the week" width="288"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/weekly-tight-sidebar-dark.png"><img src="docs/screenshots/weekly-tight-sidebar-light.png" alt="Sidebar: the same limits, 18% over pace for the week" width="288"></picture> |
 
+Active sessions stand out in the sidebar: a gear replaces the icon of every session Claude is busy with. It turns while Claude works, and stands still and greyer with a badge when the session needs you: **Waiting** for your input, **Ready** with a response you have not read, or **Error**. Sessions with nothing going on show no icon. **Sessions** in the Usage Pace row turns this on or off.
+
+<img src="docs/screenshots/sessions-sidebar.gif" alt="The sidebar of the Claude desktop app: turning gears for sessions at work, Waiting and Ready badges for sessions that need you" width="288">
+
 The text follows Claude's language (English or German).
 
 ## Install
