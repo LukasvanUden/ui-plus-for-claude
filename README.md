@@ -90,6 +90,18 @@ bash Scripts/build-app.sh
 
 Then move `build/UI+ for Claude.app` to Applications and open it.
 
+## Windows
+
+UI+ for Claude also runs on Windows. The add-on itself is the same; only the installer differs.
+
+1. Download **UI-Plus-for-Claude-Windows.zip** from the latest release (or run `bash Windows/build-zip.sh` in a clone) and unzip it.
+2. Double-click **install.cmd**. If Claude is open, it restarts with UI+.
+3. If UI+ doesn't show when you open Claude later, sign out of Windows and back in once.
+
+To remove it, click **Uninstall…** in the usage popover, or double-click **uninstall.cmd** (also in `%LOCALAPPDATA%\UI+ for Claude`) and restart Claude.
+
+How it works on Windows: `Windows/ui-plus.ps1` copies `Extension/` into Claude's data folder (`%APPDATA%\Claude`, or for the Microsoft Store/MSIX version `%LOCALAPPDATA%\Packages\Claude_*\LocalCache\Roaming\Claude`) under `extensions\fmkadmapgofadopljbjfkapdkoienihi`, and sets `REACT_PROFILE=1` as a user environment variable. Windows keeps that variable across sign-ins, so no login item is needed. A scheduled task, **UI+ for Claude update check**, checks GitHub once a day for a newer release.
+
 ## Private by design
 
 - It runs only on claude.ai inside the Claude desktop app, and only adds to what's on screen.

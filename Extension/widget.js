@@ -682,6 +682,37 @@
     return null;
   }
 
+  // Some Claude versions (Claude for Windows 4.4212, for one) show when a
+  // session works but never mark a finished one as unread. When a session
+  // goes from working to idle while it isn't the open one, UI+ marks it
+  // Ready itself, until it is opened. Kept in sessionStorage, so it survives
+  // reloads but not a Claude restart.
+  const READY_KEY = 'usage-pace:inferred-ready';
+  const lastState = new Map();
+  let inferred;
+  try { inferred = new Set(JSON.parse(sessionStorage.getItem(READY_KEY) || '[]')); } catch { inferred = new Set(); }
+  function saveInferred() {
+    try { sessionStorage.setItem(READY_KEY, JSON.stringify([...inferred])); } catch {}
+  }
+
+  function inferReady(main, state) {
+    const key = main.closest('[data-row-key]')?.dataset.rowKey;
+    if (!key) return state;
+    const open = main.getAttribute('aria-current') === 'page' || main.dataset.selected === 'focused';
+    const before = lastState.get(key);
+    lastState.set(key, state);
+    let changed = false;
+    if (state || open) {
+      // Claude marks it itself, or it's in front of you: nothing to infer.
+      changed = inferred.delete(key);
+    } else if (before === 'running') {
+      inferred.add(key);
+      changed = true;
+    }
+    if (changed) saveInferred();
+    return state ?? (inferred.has(key) ? 'ready' : null);
+  }
+
   function setAttribute(node, name, value) {
     if (value === null) node.removeAttribute(name);
     else if (node.getAttribute(name) !== value) node.setAttribute(name, value);
@@ -701,7 +732,7 @@
     // icon or a title in its place.
     for (const main of scope.querySelectorAll('[data-row-main-button]:not([data-row-nav])')) {
       if (!main.querySelector(':scope > :is(.df-leading-slot, [data-row-label="iconless"])')) continue;
-      const state = sessionState(main.closest('[data-row]') ?? main);
+      const state = inferReady(main, sessionState(main.closest('[data-row]') ?? main));
       setAttribute(main, 'data-up-session', state ?? 'idle');
       setAttribute(main, 'data-up-badge', badges[state] ?? null);
     }
