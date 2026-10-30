@@ -1,5 +1,5 @@
 {
-  "name": "usage-pace-for-claude",
+  "name": "ui-addon-for-claude",
   "private": true,
   "scripts": {
     "test": "node --test Tests/*.test.mjs",

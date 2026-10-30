@@ -1,19 +1,20 @@
 #!/bin/bash
-# Builds build/Usage-Pace.dmg for a GitHub release: the app signed with your
-# Developer ID next to a link to Applications, notarized by Apple.
+# Builds build/UI-Add-on-for-Claude.dmg for a GitHub release: the app signed
+# with your Developer ID next to a link to Applications, notarized by Apple.
 #
 #   bash Scripts/release.sh <notarytool keychain profile>
 #
 # Create the profile once (it asks for an app-specific password from
 # account.apple.com):
 #
-#   xcrun notarytool store-credentials usage-pace --apple-id <your Apple ID> --team-id <your team ID>
+#   xcrun notarytool store-credentials ui-addon --apple-id <your Apple ID> --team-id <your team ID>
 set -euo pipefail
 
 PROFILE="${1:?usage: bash Scripts/release.sh <notarytool keychain profile>}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP="$ROOT/build/Usage Pace.app"
-DMG="$ROOT/build/Usage-Pace.dmg"
+NAME="UI Add-on for Claude"
+APP="$ROOT/build/$NAME.app"
+DMG="$ROOT/build/UI-Add-on-for-Claude.dmg"
 STAGE="$ROOT/build/dmg"
 WRITABLE="$ROOT/build/writable.dmg"
 
@@ -31,14 +32,14 @@ echo "Signing with: $IDENTITY"
 # and a background that says so.
 /bin/rm -rf "$STAGE" "$WRITABLE" "$DMG"
 /bin/mkdir -p "$STAGE/.background"
-/usr/bin/ditto "$APP" "$STAGE/Usage Pace.app"
+/usr/bin/ditto "$APP" "$STAGE/$NAME.app"
 /bin/ln -s /Applications "$STAGE/Applications"
 /usr/bin/swift "$ROOT/Scripts/dmg-background.swift" "$STAGE/.background/background.tiff"
 
 # Finder stores the window layout on the image itself, so it arranges a
 # writable copy first. A test mount of an earlier image would share its name.
-/usr/bin/hdiutil detach -quiet "/Volumes/Usage Pace" 2>/dev/null || true
-/usr/bin/hdiutil create -quiet -volname "Usage Pace" -srcfolder "$STAGE" -fs HFS+ -format UDRW -size 16m "$WRITABLE"
+/usr/bin/hdiutil detach -quiet "/Volumes/$NAME" 2>/dev/null || true
+/usr/bin/hdiutil create -quiet -volname "$NAME" -srcfolder "$STAGE" -fs HFS+ -format UDRW -size 16m "$WRITABLE"
 MOUNT="$(/usr/bin/hdiutil attach -readwrite -noverify -noautoopen "$WRITABLE" | /usr/bin/sed -n 's#.*\(/Volumes/.*\)$#\1#p')"
 echo "Arranging the window (macOS may ask to let this terminal control Finder)…"
 /usr/bin/osascript <<APPLESCRIPT
@@ -55,8 +56,8 @@ tell application "Finder"
 		set icon size of viewOptions to 96
 		set text size of viewOptions to 13
 		set background picture of viewOptions to file ".background:background.tiff"
-		set extension hidden of item "Usage Pace.app" of container window to true
-		set position of item "Usage Pace.app" of container window to {170, 230}
+		set extension hidden of item "$NAME.app" of container window to true
+		set position of item "$NAME.app" of container window to {170, 230}
 		set position of item "Applications" of container window to {470, 230}
 		update without registering applications
 		delay 1

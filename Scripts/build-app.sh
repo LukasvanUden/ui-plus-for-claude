@@ -1,12 +1,14 @@
 #!/bin/bash
-# Builds build/Usage Pace.app. Signs it ad hoc, or with the signing identity
-# given as the first argument (Scripts/release.sh passes your Developer ID).
+# Builds build/UI Add-on for Claude.app. Signs it ad hoc, or with the signing
+# identity given as the first argument (Scripts/release.sh passes your
+# Developer ID).
 set -euo pipefail
 
 IDENTITY="${1:-}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD="$ROOT/build"
-APP="$BUILD/Usage Pace.app"
+NAME="UI Add-on for Claude"
+APP="$BUILD/$NAME.app"
 VERSION="$(/usr/bin/sed -n 's/.*"version": "\([^"]*\)".*/\1/p' "$ROOT/Extension/manifest.json")"
 
 /bin/rm -rf "$BUILD"
@@ -14,15 +16,16 @@ VERSION="$(/usr/bin/sed -n 's/.*"version": "\([^"]*\)".*/\1/p' "$ROOT/Extension/
 /usr/bin/osacompile -o "$APP" "$ROOT/App/main.applescript"
 /bin/cp -R "$ROOT/Extension" "$APP/Contents/Resources/Extension"
 # Named after the app: the login item starts this file, and macOS shows its name.
-/bin/cp "$ROOT/App/usage-pace.sh" "$APP/Contents/Resources/Usage Pace"
-/bin/chmod 755 "$APP/Contents/Resources/Usage Pace"
+/bin/cp "$ROOT/App/ui-addon.sh" "$APP/Contents/Resources/$NAME"
+/bin/chmod 755 "$APP/Contents/Resources/$NAME"
 
 PLIST="$APP/Contents/Info.plist"
 set_key() {
   /usr/libexec/PlistBuddy -c "Set :$1 $2" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :$1 string $2" "$PLIST"
 }
+# The id keeps the add-on's first name, Usage Pace, like the login item's label.
 set_key CFBundleIdentifier io.github.lukasvanuden.usagepace
-set_key CFBundleName "Usage Pace"
+set_key CFBundleName "$NAME"
 set_key CFBundleShortVersionString "$VERSION"
 set_key CFBundleVersion "$VERSION"
 

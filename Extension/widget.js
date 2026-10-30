@@ -19,7 +19,7 @@
   // stop the polling.
   const FETCH_TIMEOUT_MS = 15_000;
   const ACCOUNT_CHECK_MS = 2_000;
-  const NAME = 'Usage Pace';
+  const NAME = 'UI Add-on';
   const GAUGE_PATHS = ['M3.8 14.2a6.8 6.8 0 1 1 12.4 0', 'M10 11.2l3.2-3.4'];
 
   const STRINGS = {
@@ -41,10 +41,10 @@
       used: (percent) => percent + ' used',
       compact: 'Compact session',
       showRail: 'Show session rail',
-      confirmUninstall: 'Remove Usage Pace from Claude?',
+      confirmUninstall: 'Remove UI Add-on from Claude?',
       cancel: 'Cancel',
       remove: 'Remove',
-      removed: 'Hidden. To remove Usage Pace completely, open the Usage Pace app in Applications or move it to the Trash.',
+      removed: 'Hidden. To remove UI Add-on completely, open the UI Add-on for Claude app in Applications or move it to the Trash.',
     },
     de: {
       title: 'Nutzung',
@@ -64,10 +64,10 @@
       used: (percent) => percent + ' genutzt',
       compact: 'Sitzung komprimieren',
       showRail: 'Sitzungsleiste anzeigen',
-      confirmUninstall: 'Usage Pace aus Claude entfernen?',
+      confirmUninstall: 'UI Add-on aus Claude entfernen?',
       cancel: 'Abbrechen',
       remove: 'Entfernen',
-      removed: 'Ausgeblendet. Zum vollständigen Entfernen die App „Usage Pace“ in Programme öffnen oder in den Papierkorb legen.',
+      removed: 'Ausgeblendet. Zum vollständigen Entfernen die App „UI Add-on for Claude“ in Programme öffnen oder in den Papierkorb legen.',
     },
   };
 
@@ -134,7 +134,8 @@
   const MORE = /^(More|Mehr)$/i;
   const SVG_NS = 'http://www.w3.org/2000/svg';
 
-  // Preferences live in claude.ai's localStorage; everything defaults to on.
+  // Preferences live in claude.ai's localStorage, under the add-on's first
+  // name, Usage Pace; everything defaults to on.
   function stored(key) {
     try {
       return localStorage.getItem('usage-pace:' + key);
@@ -150,7 +151,7 @@
   }
 
   // Every install stamps a new id into the manifest, so "Uninstall…" hides
-  // the extension until Usage Pace is installed again.
+  // the extension until the add-on is installed again.
   const INSTALL_ID = (() => {
     try {
       return chrome.runtime.getManifest().version_name ?? '';

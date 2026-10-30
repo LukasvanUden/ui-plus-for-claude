@@ -1,4 +1,4 @@
-// Draws the background of the Usage Pace disk image window, 640 × 440 points,
+// Draws the background of the UI Add-on for Claude disk image window, 640 × 440 points,
 // as a TIFF with a 1x and a 2x image so it stays sharp on Retina screens.
 //
 //   swift Scripts/dmg-background.swift <output.tiff> [preview.png]
@@ -34,11 +34,11 @@ func render(scale: CGFloat) -> NSBitmapImageRep {
     color(0xF5F5F3).setFill()
     NSRect(origin: .zero, size: size).fill()
 
-    drawCentered("Usage Pace", top: 52, font: .systemFont(ofSize: 26, weight: .semibold), color: color(0x1D1D1F))
+    drawCentered("UI Add-on for Claude", top: 52, font: .systemFont(ofSize: 26, weight: .semibold), color: color(0x1D1D1F))
     drawCentered("Drag the app onto Applications", top: 90, font: .systemFont(ofSize: 15), color: color(0x6E6E73))
     // Kept clear of the bottom edge: newer macOS versions have taller title
     // bars, which leave less of the window for the picture.
-    drawCentered("Then open Usage Pace once and restart Claude.", top: 364,
+    drawCentered("Then open the app once and restart Claude.", top: 364,
                  font: .systemFont(ofSize: 13), color: color(0x8A8A8E))
 
     let y = size.height - iconCenterFromTop
