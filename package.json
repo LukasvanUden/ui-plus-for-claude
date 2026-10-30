@@ -1,5 +1,5 @@
 {
-  "name": "ui-addon-for-claude",
+  "name": "ui-plus-for-claude",
   "private": true,
   "scripts": {
     "test": "node --test Tests/*.test.mjs",

@@ -19,7 +19,7 @@
   // stop the polling.
   const FETCH_TIMEOUT_MS = 15_000;
   const ACCOUNT_CHECK_MS = 2_000;
-  const NAME = 'UI Add-on';
+  const NAME = 'UI+';
   const GAUGE_PATHS = ['M3.8 14.2a6.8 6.8 0 1 1 12.4 0', 'M10 11.2l3.2-3.4'];
 
   const STRINGS = {
@@ -41,10 +41,10 @@
       used: (percent) => percent + ' used',
       compact: 'Compact session',
       showRail: 'Show session rail',
-      confirmUninstall: 'Remove UI Add-on from Claude?',
+      confirmUninstall: 'Remove UI+ from Claude?',
       cancel: 'Cancel',
       remove: 'Remove',
-      removed: 'Hidden. To remove UI Add-on completely, open the UI Add-on for Claude app in Applications or move it to the Trash.',
+      removed: 'Hidden. To remove UI+ completely, open the UI+ for Claude app in Applications or move it to the Trash.',
     },
     de: {
       title: 'Nutzung',
@@ -64,10 +64,10 @@
       used: (percent) => percent + ' genutzt',
       compact: 'Sitzung komprimieren',
       showRail: 'Sitzungsleiste anzeigen',
-      confirmUninstall: 'UI Add-on aus Claude entfernen?',
+      confirmUninstall: 'UI+ aus Claude entfernen?',
       cancel: 'Abbrechen',
       remove: 'Entfernen',
-      removed: 'Ausgeblendet. Zum vollständigen Entfernen die App „UI Add-on for Claude“ in Programme öffnen oder in den Papierkorb legen.',
+      removed: 'Ausgeblendet. Zum vollständigen Entfernen die App „UI+ for Claude“ in Programme öffnen oder in den Papierkorb legen.',
     },
   };
 

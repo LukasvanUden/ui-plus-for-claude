@@ -1,5 +1,5 @@
 #!/bin/sh
-# Installs and removes UI Add-on for Claude; runs from inside its app.
+# Installs and removes UI+ for Claude; runs from inside its app.
 #
 # When the Claude desktop app starts with REACT_PROFILE=1 (a developer hook
 # meant for React DevTools), it loads a local browser extension from its data
@@ -17,12 +17,10 @@ APP="${HERE%/Contents/Resources}"
 LABEL=io.github.lukasvanuden.usagepace
 AGENT="$HOME/Library/LaunchAgents/$LABEL.plist"
 EXTENSION_DIR="$HOME/Library/Application Support/Claude/extensions/fmkadmapgofadopljbjfkapdkoienihi"
-REPO=LukasvanUden/ui-addon-for-claude
+REPO=LukasvanUden/ui-plus-for-claude
 # The tests point these at a local server and a temporary folder.
-API="${UI_ADDON_API:-https://api.github.com}"
-STATE_DIR="${UI_ADDON_STATE:-$HOME/Library/Application Support/UI Add-on for Claude}"
-OLD_APP="/Applications/Usage Pace.app"
-OLD_STATE_DIR="$HOME/Library/Application Support/Usage Pace"
+API="${UI_PLUS_API:-https://api.github.com}"
+STATE_DIR="${UI_PLUS_STATE:-$HOME/Library/Application Support/UI+ for Claude}"
 
 version() {
   # Inside the app the extension sits next to this script, in a git checkout
@@ -56,17 +54,19 @@ case "${1:-}" in
     /bin/cp "$HERE/Extension/"* "$EXTENSION_DIR/"
     # A new install id shows the extension again after "Uninstall…" in Claude.
     /usr/bin/sed -i '' "s/\"version\": \"\([^\"]*\)\",/\"version\": \"\1\", \"version_name\": \"install-$(/bin/date +%s)\",/" "$EXTENSION_DIR/manifest.json"
-    # This app replaces Usage Pace: the old app goes to the Trash, its update
-    # state goes away.
-    if [ -d "$OLD_APP" ] && [ "$APP" != "$OLD_APP" ]; then
-      trash="$HOME/.Trash/Usage Pace.app"
-      [ -e "$trash" ] && trash="$HOME/.Trash/Usage Pace $(/bin/date +%s).app"
-      /bin/mv "$OLD_APP" "$trash" 2>/dev/null || true
-    fi
-    /bin/rm -rf "$OLD_STATE_DIR"
+    # This app replaces its earlier names, Usage Pace and UI Add-on for
+    # Claude: their apps go to the Trash, their update state goes away.
+    for old in "Usage Pace" "UI Add-on for Claude"; do
+      if [ -d "/Applications/$old.app" ] && [ "$APP" != "/Applications/$old.app" ]; then
+        trash="$HOME/.Trash/$old.app"
+        [ -e "$trash" ] && trash="$HOME/.Trash/$old $(/bin/date +%s).app"
+        /bin/mv "/Applications/$old.app" "$trash" 2>/dev/null || true
+      fi
+      /bin/rm -rf "$HOME/Library/Application Support/$old"
+    done
     # macOS names login items after the file they start: inside the app this
-    # script is called "UI Add-on for Claude", so it starts the script itself,
-    # not /bin/sh.
+    # script is called "UI+ for Claude", so it starts the script itself, not
+    # /bin/sh.
     /bin/cat > "$AGENT" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -113,7 +113,7 @@ PLIST
     version
     ;;
   *)
-    echo "usage: ui-addon.sh install|uninstall|status|version|check-update" >&2
+    echo "usage: ui-plus.sh install|uninstall|status|version|check-update" >&2
     exit 64
     ;;
 esac

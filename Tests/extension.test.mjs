@@ -90,7 +90,7 @@ test('sidebar row, popover time lines and settings', { timeout: 60_000 }, async 
   assert.equal(steps.CONTEXT_CHANGED.popover.context, 'Context 85% used 170k / 200k Compact session', 'follows the rail as it changes');
   assert.equal(steps.CONTEXT_CHANGED.popover.contextWidth, '85%');
   assert.deepEqual(popover.settings, ['sidebar:true', 'popover:true', 'sessions:true']);
-  assert.equal(popover.settingsText, 'UI Add-on Sidebar Popover Sessions Uninstall…');
+  assert.equal(popover.settingsText, 'UI+ Sidebar Popover Sessions Uninstall…');
   assert.equal(steps.POPOVER.mutations, 0, 'enhancing the popover does not retrigger itself');
 
   assert.equal(steps.COLLAPSED.sidebar.rowsVisible, false);
@@ -114,17 +114,17 @@ test('sidebar row, popover time lines and settings', { timeout: 60_000 }, async 
   assert.equal(steps.SWITCHED_BACK.sidebar?.header, 'Usage 16% over pace');
 
   const confirm = steps.CONFIRM;
-  assert.equal(confirm.popover.settingsText, 'Remove UI Add-on from Claude? Cancel Remove', '"Uninstall…" asks first');
+  assert.equal(confirm.popover.settingsText, 'Remove UI+ from Claude? Cancel Remove', '"Uninstall…" asks first');
   assert.equal(confirm.sidebar.header, 'Usage 16% over pace', 'nothing is hidden before confirming');
   assert.equal(confirm.mutations, 0);
 
-  assert.equal(steps.CANCELLED.popover.settingsText, 'UI Add-on Sidebar Popover Sessions Uninstall…');
+  assert.equal(steps.CANCELLED.popover.settingsText, 'UI+ Sidebar Popover Sessions Uninstall…');
   assert.deepEqual(steps.CANCELLED.popover.settings, ['sidebar:true', 'popover:false', 'sessions:true']);
   assert.equal(steps.CANCELLED.sidebar.header, 'Usage 16% over pace');
 
   const uninstalled = steps.UNINSTALLED;
   assert.equal(uninstalled.sidebar, null, 'confirming hides the sidebar row right away');
-  assert.match(uninstalled.popover.removedHint, /^Hidden\. To remove UI Add-on completely/);
+  assert.match(uninstalled.popover.removedHint, /^Hidden\. To remove UI\+ completely/);
   assert.deepEqual(uninstalled.popover.settings, []);
   assert.equal(uninstalled.mutations, 0);
 

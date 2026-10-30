@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds build/UI Add-on for Claude.app. Signs it ad hoc, or with the signing
+# Builds build/UI+ for Claude.app. Signs it ad hoc, or with the signing
 # identity given as the first argument (Scripts/release.sh passes your
 # Developer ID).
 set -euo pipefail
@@ -7,7 +7,7 @@ set -euo pipefail
 IDENTITY="${1:-}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD="$ROOT/build"
-NAME="UI Add-on for Claude"
+NAME="UI+ for Claude"
 APP="$BUILD/$NAME.app"
 VERSION="$(/usr/bin/sed -n 's/.*"version": "\([^"]*\)".*/\1/p' "$ROOT/Extension/manifest.json")"
 
@@ -16,7 +16,7 @@ VERSION="$(/usr/bin/sed -n 's/.*"version": "\([^"]*\)".*/\1/p' "$ROOT/Extension/
 /usr/bin/osacompile -o "$APP" "$ROOT/App/main.applescript"
 /bin/cp -R "$ROOT/Extension" "$APP/Contents/Resources/Extension"
 # Named after the app: the login item starts this file, and macOS shows its name.
-/bin/cp "$ROOT/App/ui-addon.sh" "$APP/Contents/Resources/$NAME"
+/bin/cp "$ROOT/App/ui-plus.sh" "$APP/Contents/Resources/$NAME"
 /bin/chmod 755 "$APP/Contents/Resources/$NAME"
 
 PLIST="$APP/Contents/Info.plist"

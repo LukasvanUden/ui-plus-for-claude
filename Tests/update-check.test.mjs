@@ -1,4 +1,4 @@
-// ui-addon.sh check-update against a local stand-in for the GitHub API:
+// ui-plus.sh check-update against a local stand-in for the GitHub API:
 // each newer release is announced once, nothing else is.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,7 +16,7 @@ const run = promisify(execFile);
 
 let release = null;
 const server = createServer((request, response) => {
-  if (request.url !== '/repos/LukasvanUden/ui-addon-for-claude/releases/latest' || !release) {
+  if (request.url !== '/repos/LukasvanUden/ui-plus-for-claude/releases/latest' || !release) {
     response.writeHead(404).end('{"message":"Not Found"}');
     return;
   }
@@ -26,16 +26,16 @@ await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 test.after(() => server.close());
 
 async function checkUpdate(state) {
-  await run('sh', ['App/ui-addon.sh', 'check-update'], {
+  await run('sh', ['App/ui-plus.sh', 'check-update'], {
     cwd: root,
-    env: { ...process.env, UI_ADDON_API: `http://127.0.0.1:${server.address().port}`, UI_ADDON_STATE: state },
+    env: { ...process.env, UI_PLUS_API: `http://127.0.0.1:${server.address().port}`, UI_PLUS_STATE: state },
   });
   const read = (name) => (existsSync(join(state, name)) ? readFileSync(join(state, name), 'utf8').trim() : null);
   return { available: read('update-available'), announced: read('announced') };
 }
 
 function freshState() {
-  return mkdtempSync(join(tmpdir(), 'ui-addon-'));
+  return mkdtempSync(join(tmpdir(), 'ui-plus-'));
 }
 
 test('announces a newer release once', async () => {

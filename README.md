@@ -1,10 +1,10 @@
-# UI Add-on for Claude
+# UI+ for Claude
 
 **See your Claude limits coming.** Plan usage with pace, active sessions and session context, right inside the Claude desktop app on your Mac.
 
-[![Download for macOS](https://img.shields.io/badge/Download-for%20macOS-2a78d6?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/LukasvanUden/ui-addon-for-claude/releases/latest/download/UI-Add-on-for-Claude.dmg)
+[![Download for macOS](https://img.shields.io/badge/Download-for%20macOS-2a78d6?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/LukasvanUden/ui-plus-for-claude/releases/latest/download/UI-Plus-for-Claude.dmg)
 
-[![Latest release](https://img.shields.io/github/v/release/LukasvanUden/ui-addon-for-claude?label=release)](https://github.com/LukasvanUden/ui-addon-for-claude/releases/latest)
+[![Latest release](https://img.shields.io/github/v/release/LukasvanUden/ui-plus-for-claude?label=release)](https://github.com/LukasvanUden/ui-plus-for-claude/releases/latest)
 [![Notarized by Apple](https://img.shields.io/badge/notarized-by%20Apple-black?logo=apple)](#private-by-design)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -15,11 +15,11 @@
   </picture>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/compact-popover-dark.png">
-    <img src="docs/screenshots/compact-popover-light.png" alt="Claude's usage popover with the session's context and Compact session, time lines above the limits, and the UI Add-on settings row" width="392">
+    <img src="docs/screenshots/compact-popover-light.png" alt="Claude's usage popover with the session's context and Compact session, time lines above the limits, and the UI+ settings row" width="392">
   </picture>
 </p>
 
-Claude's limits reset every five hours and every week. Claude shows how much of them you've used, but not whether you're using them too fast, so the limit tends to arrive by surprise. UI Add-on for Claude shows you both, and adds a few things the Claude app is missing.
+Claude's limits reset every five hours and every week. Claude shows how much of them you've used, but not whether you're using them too fast, so the limit tends to arrive by surprise. UI+ for Claude shows you both, and adds a few things the Claude app is missing.
 
 ## What you get
 
@@ -40,36 +40,36 @@ When one limit runs out faster than the other:
 
 ## Install
 
-1. Download **[UI-Add-on-for-Claude.dmg](https://github.com/LukasvanUden/ui-addon-for-claude/releases/latest/download/UI-Add-on-for-Claude.dmg)** and open it.
-2. Drag **UI Add-on for Claude** onto **Applications**.
+1. Download **[UI-Plus-for-Claude.dmg](https://github.com/LukasvanUden/ui-plus-for-claude/releases/latest/download/UI-Plus-for-Claude.dmg)** and open it.
+2. Drag **UI+ for Claude** onto **Applications**.
 3. Open it from your Applications folder and click **OK**.
 4. Quit Claude (⌘Q) and open it again.
 
 **Or let an agent do it:** copy this prompt into Claude Code (or any agent that can run commands on your Mac):
 
 ```text
-Install UI Add-on for Claude (https://github.com/LukasvanUden/ui-addon-for-claude) on this Mac by running:
+Install UI+ for Claude (https://github.com/LukasvanUden/ui-plus-for-claude) on this Mac by running:
 
-curl -fL -o /tmp/UI-Add-on-for-Claude.dmg https://github.com/LukasvanUden/ui-addon-for-claude/releases/latest/download/UI-Add-on-for-Claude.dmg
-hdiutil attach -nobrowse -quiet /tmp/UI-Add-on-for-Claude.dmg
-ditto "/Volumes/UI Add-on for Claude/UI Add-on for Claude.app" "/Applications/UI Add-on for Claude.app"
-hdiutil detach -quiet "/Volumes/UI Add-on for Claude"
-"/Applications/UI Add-on for Claude.app/Contents/Resources/UI Add-on for Claude" install
+curl -fL -o /tmp/UI-Plus-for-Claude.dmg https://github.com/LukasvanUden/ui-plus-for-claude/releases/latest/download/UI-Plus-for-Claude.dmg
+hdiutil attach -nobrowse -quiet /tmp/UI-Plus-for-Claude.dmg
+ditto "/Volumes/UI+ for Claude/UI+ for Claude.app" "/Applications/UI+ for Claude.app"
+hdiutil detach -quiet "/Volumes/UI+ for Claude"
+"/Applications/UI+ for Claude.app/Contents/Resources/UI+ for Claude" install
 
 Do not quit the Claude app yourself. When done, tell me to quit Claude with Cmd+Q and open it again.
 ```
 
-**Coming from Usage Pace?** UI Add-on for Claude is its new name. Install it as above: it replaces Usage Pace, moves the old app to the Trash and keeps your settings.
+**Coming from Usage Pace?** UI+ for Claude is its new name. Install it as above: it replaces Usage Pace, moves the old app to the Trash and keeps your settings.
 
 ### From a git clone
 
 ```sh
-git clone https://github.com/LukasvanUden/ui-addon-for-claude.git
-cd ui-addon-for-claude
+git clone https://github.com/LukasvanUden/ui-plus-for-claude.git
+cd ui-plus-for-claude
 bash Scripts/build-app.sh
 ```
 
-Then move `build/UI Add-on for Claude.app` to Applications and open it.
+Then move `build/UI+ for Claude.app` to Applications and open it.
 
 ## Private by design
 
@@ -80,7 +80,7 @@ Then move `build/UI Add-on for Claude.app` to Applications and open it.
 
 ## Settings, updates and uninstalling
 
-- **Settings:** the **UI Add-on** row at the bottom of Claude's usage popover turns the sidebar row, the popover additions and the session gears on or off.
+- **Settings:** the **UI+** row at the bottom of Claude's usage popover turns the sidebar row, the popover additions and the session gears on or off.
 - **Updates:** once a day, the add-on checks GitHub for a newer release. When there is one, it opens a dialog with a download link (once per release). From a git clone, update with `bash Scripts/update.sh`.
 - **Uninstall:** click **Uninstall…** in the usage popover and everything disappears right away. To remove the files as well, open the app and click **Uninstall**, or move it to the Trash (it then stops at your next login). Restart Claude afterwards.
 
@@ -100,11 +100,11 @@ macOS only for now.
 
 ## How it works
 
-When the Claude desktop app starts with the environment variable `REACT_PROFILE=1`, it loads a local browser extension from `~/Library/Application Support/Claude/extensions/fmkadmapgofadopljbjfkapdkoienihi`. This hook is meant for React DevTools; UI Add-on for Claude puts its own small extension there instead.
+When the Claude desktop app starts with the environment variable `REACT_PROFILE=1`, it loads a local browser extension from `~/Library/Application Support/Claude/extensions/fmkadmapgofadopljbjfkapdkoienihi`. This hook is meant for React DevTools; UI+ for Claude puts its own small extension there instead.
 
 The app ([App/](App/)) copies [Extension/](Extension/) to that folder and adds a login item (`~/Library/LaunchAgents/io.github.lukasvanuden.usagepace.plist`, named after the add-on's first name, Usage Pace). At login and once a day, it sets `REACT_PROFILE=1` for apps you open and checks for updates. The login item runs from inside the app, so it stops once the app is gone.
 
-- macOS lists the login item as **UI Add-on for Claude** under System Settings → General → Login Items & Extensions. Turning it off there stops the add-on after your next login.
+- macOS lists the login item as **UI+ for Claude** under System Settings → General → Login Items & Extensions. Turning it off there stops the add-on after your next login.
 - `REACT_PROFILE=1` is set for every app you open, not only Claude. Other apps normally ignore it.
 - If Claude opens at login before the variable is set, the add-on appears after the next Claude restart.
 
@@ -115,7 +115,7 @@ npm install
 npm test
 ```
 
-`Scripts/build-app.sh` builds `build/UI Add-on for Claude.app`, signed ad hoc. `Scripts/release.sh <notarytool profile>` builds `build/UI-Add-on-for-Claude.dmg` for a release: signed with your Developer ID and notarized by Apple. It lets Finder arrange the disk image window, so macOS asks once to let your terminal control Finder.
+`Scripts/build-app.sh` builds `build/UI+ for Claude.app`, signed ad hoc. `Scripts/release.sh <notarytool profile>` builds `build/UI-Plus-for-Claude.dmg` for a release: signed with your Developer ID and notarized by Apple. It lets Finder arrange the disk image window, so macOS asks once to let your terminal control Finder.
 
 For screenshots, [docs/demo](docs/demo/index.html) shows the extension on a stand-in for Claude's sidebar and usage popover, with a toolbar to switch between scenarios (under, on or over pace, near the limit, new windows), context levels, English and German, and dark and light. Serve the repository and open it:
 
@@ -131,4 +131,4 @@ The tests load the extension into a stand-in for Claude ([Tests/fake-claude](Tes
 
 ---
 
-The project is [MIT licensed](LICENSE). Claude is a trademark of Anthropic, PBC. UI Add-on for Claude is an independent project and is not affiliated with, endorsed by, or sponsored by Anthropic.
+The project is [MIT licensed](LICENSE). Claude is a trademark of Anthropic, PBC. UI+ for Claude is an independent project and is not affiliated with, endorsed by, or sponsored by Anthropic.

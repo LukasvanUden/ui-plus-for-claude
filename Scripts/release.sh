@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds build/UI-Add-on-for-Claude.dmg for a GitHub release: the app signed
+# Builds build/UI-Plus-for-Claude.dmg for a GitHub release: the app signed
 # with your Developer ID next to a link to Applications, notarized by Apple.
 #
 #   bash Scripts/release.sh <notarytool keychain profile>
@@ -7,14 +7,14 @@
 # Create the profile once (it asks for an app-specific password from
 # account.apple.com):
 #
-#   xcrun notarytool store-credentials ui-addon --apple-id <your Apple ID> --team-id <your team ID>
+#   xcrun notarytool store-credentials ui-plus --apple-id <your Apple ID> --team-id <your team ID>
 set -euo pipefail
 
 PROFILE="${1:?usage: bash Scripts/release.sh <notarytool keychain profile>}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-NAME="UI Add-on for Claude"
+NAME="UI+ for Claude"
 APP="$ROOT/build/$NAME.app"
-DMG="$ROOT/build/UI-Add-on-for-Claude.dmg"
+DMG="$ROOT/build/UI-Plus-for-Claude.dmg"
 STAGE="$ROOT/build/dmg"
 WRITABLE="$ROOT/build/writable.dmg"
 

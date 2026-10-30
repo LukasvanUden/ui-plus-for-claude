@@ -1,16 +1,16 @@
--- UI Add-on for Claude.app: opening it installs (or refreshes) the add-on and
+-- UI+ for Claude.app: opening it installs (or refreshes) the add-on and
 -- offers to uninstall it. The login item opens it when a newer release exists,
 -- and it then shows the update dialog instead. The work happens in
--- App/ui-addon.sh, which the build copies into the app as "UI Add-on for Claude".
+-- App/ui-plus.sh, which the build copies into the app as "UI+ for Claude".
 
-property appName : "UI Add-on for Claude"
-property releasesURL : "https://github.com/LukasvanUden/ui-addon-for-claude/releases/latest"
+property appName : "UI+ for Claude"
+property releasesURL : "https://github.com/LukasvanUden/ui-plus-for-claude/releases/latest"
 
 on run
 	set german to (user locale of (system info)) starts with "de"
 	set appPath to POSIX path of (path to me)
 
-	-- Written by ui-addon.sh when it finds a newer release.
+	-- Written by ui-plus.sh when it finds a newer release.
 	set marker to POSIX path of (path to application support from user domain) & appName & "/update-available"
 	set latest to ""
 	try
@@ -33,15 +33,16 @@ on run
 
 	set tool to "/bin/sh " & quoted form of (appPath & "Contents/Resources/" & appName)
 	set wasInstalled to (do shell script tool & " status") is "installed"
-	-- Usage Pace was this add-on's first name; installing moves its app to the Trash.
-	set replacing to (do shell script "[ -d '/Applications/Usage Pace.app' ] && echo yes || echo no") is "yes"
+	-- Usage Pace and UI Add-on for Claude were this add-on's earlier names;
+	-- installing moves their apps to the Trash.
+	set replacing to (do shell script "[ -d '/Applications/Usage Pace.app' ] || [ -d '/Applications/UI Add-on for Claude.app' ] && echo yes || echo no") is "yes"
 	do shell script tool & " install"
 
 	if replacing then
 		if german then
-			display dialog appName & " ersetzt jetzt Usage Pace, deine Einstellungen bleiben. Die alte App liegt im Papierkorb." & return & return & "Beende Claude einmal mit ⌘Q und öffne es wieder." buttons {"OK"} default button 1
+			display dialog appName & " ersetzt jetzt die alte Version, deine Einstellungen bleiben. Die alte App liegt im Papierkorb." & return & return & "Beende Claude einmal mit ⌘Q und öffne es wieder." buttons {"OK"} default button 1
 		else
-			display dialog appName & " now replaces Usage Pace and keeps your settings. The old app is in the Trash." & return & return & "Quit Claude once with ⌘Q and open it again." buttons {"OK"} default button 1
+			display dialog appName & " now replaces the old version and keeps your settings. The old app is in the Trash." & return & return & "Quit Claude once with ⌘Q and open it again." buttons {"OK"} default button 1
 		end if
 		return
 	end if
