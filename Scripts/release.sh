@@ -1,6 +1,7 @@
 #!/bin/bash
 # Builds build/UI-Plus-for-Claude.dmg for a GitHub release: the app signed
-# with your Developer ID next to a link to Applications, notarized by Apple.
+# with your Developer ID next to a link to Applications, notarized by Apple,
+# plus build/UI-Plus-for-Claude-Windows.zip for Windows.
 #
 #   bash Scripts/release.sh <notarytool keychain profile>
 #
@@ -77,4 +78,6 @@ echo "Notarizing (this takes a few minutes)…"
 /usr/bin/xcrun stapler staple "$DMG"
 /usr/sbin/spctl --assess --type open --context context:primary-signature --verbose "$DMG"
 
-echo "Release ready: $DMG"
+/bin/bash "$ROOT/Windows/build-zip.sh"
+
+echo "Release ready: $DMG and $ROOT/build/UI-Plus-for-Claude-Windows.zip"

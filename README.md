@@ -145,7 +145,7 @@ npm install
 npm test
 ```
 
-`Scripts/build-app.sh` builds `build/UI+ for Claude.app`, signed ad hoc. `Scripts/release.sh <notarytool profile>` builds `build/UI-Plus-for-Claude.dmg` for a release: signed with your Developer ID and notarized by Apple. It lets Finder arrange the disk image window, so macOS asks once to let your terminal control Finder.
+`Scripts/build-app.sh` builds `build/UI+ for Claude.app`, signed ad hoc. `Scripts/release.sh <notarytool profile>` builds `build/UI-Plus-for-Claude.dmg` for a release: signed with your Developer ID and notarized by Apple, and also `build/UI-Plus-for-Claude-Windows.zip` (via `Windows/build-zip.sh`). It lets Finder arrange the disk image window, so macOS asks once to let your terminal control Finder.
 
 The images above come from [docs/mockup](docs/mockup/index.html): the Claude desktop app as it looks today (Code tab, dark), with the extension running inside. `?view=` picks the whole window (`hero`), the pace states (`pace`), the session states (`sessions`) or the usage popover (`popover`). Underneath, [docs/demo](docs/demo/index.html) answers the usage API and draws the popover; on its own, it has a toolbar to switch between scenarios (under, on or over pace, near the limit, new windows), context levels, English and German, and dark and light. Serve the repository and open either:
 
