@@ -52,11 +52,14 @@
    waits, is ready or failed. Other session rows show no icon, keeping the
    space so titles line up. Rows without an icon, such as side sessions
    nested under the session that started them, get the gear before their
-   title. Claude's own status marks give way to these. */
+   title, on the same line: Claude's title is a block as wide as the row.
+   Claude's own status marks give way to these. */
 [data-up-session] > .df-leading-slot { position: relative; }
 [data-up-session] > .df-leading-slot > * { visibility: hidden; }
 [data-up-session]:not([data-up-session="idle"]) > .df-leading-slot::before { position: absolute; inset: 0; margin: auto; }
-[data-up-session]:not([data-up-session="idle"]) > [data-row-label="iconless"]::before { display: inline-block; flex: none; margin-inline-end: var(--df-row-gap, 8px); vertical-align: -0.2em; }
+[data-up-session]:not([data-up-session="idle"]) > [data-row-label="iconless"] { display: flex; align-items: center; }
+[data-up-session]:not([data-up-session="idle"]) > [data-row-label="iconless"] > * { min-width: 0; }
+[data-up-session]:not([data-up-session="idle"]) > [data-row-label="iconless"]::before { flex: none; margin-inline-end: var(--df-row-gap, 8px); }
 [data-up-session]:not([data-up-session="idle"]) > :is(.df-leading-slot, [data-row-label="iconless"])::before {
   content: ''; width: var(--df-icon-size, 16px); height: var(--df-icon-size, 16px);
   background: currentColor;

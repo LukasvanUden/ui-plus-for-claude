@@ -19,9 +19,9 @@ const SESSION_ROWS = [
 ];
 // Side sessions sit under the session that started them, behind a guide
 // line and without an icon, like rows outside the pinned section: one at
-// work, one idle.
+// work, one idle. Their title is a block as wide as the row.
 const SIDE_SESSIONS = ['<span class="relative" data-attention="working">Map weiterbauen</span>', 'Notes']
-  .map((label) => `<div data-row class="group" style="display:flex"><a data-row-main-button href="#" style="display:flex;align-items:center;flex:1;min-width:0"><span data-row-label="iconless" style="flex:1;min-width:0">${label}</span></a></div>`).join('');
+  .map((label) => `<div data-row class="group" style="display:flex"><a data-row-main-button href="#" style="display:flex;align-items:center;flex:1;min-width:0"><span data-row-label="iconless" style="flex:1;min-width:0"><span dir="auto" class="dframe-fade-label" style="display:block;width:100%;min-width:0;white-space:nowrap;overflow:hidden"><span style="display:inline-block;white-space:nowrap;vertical-align:top">${label}</span></span></span></a></div>`).join('');
 // A row with a menu wraps its link and puts the status in a decoration
 // beside it, as a plain colored dot.
 const SESSIONS = SESSION_ROWS.map(([, icon, label, tail = '', decorated = false]) => `<div data-row class="group" style="display:flex">
@@ -129,6 +129,7 @@ function state(contents) {
           badge === 'none' ? '' : badge.replace(/"/g, ''),
         ].join(' ').trim();
       }),
+      sideRows: [...document.querySelectorAll('.df-accordion-guide [data-row-main-button]')].map((main) => Math.round(main.getBoundingClientRect().height)),
       tailMark: getComputedStyle(document.querySelector('.df-tail-mark')).display,
       decoration: getComputedStyle(document.querySelector('[data-row-decoration]')).display,
       shimmer: [getComputedStyle(document.querySelector('[data-cds="ShimmerText"]')).webkitTextFillColor, getComputedStyle(document.querySelector('[data-cds-shimmer-clone]')).display].join(' '),

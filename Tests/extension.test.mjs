@@ -47,6 +47,8 @@ test('sidebar row, popover time lines and settings', { timeout: 60_000 }, async 
     'idle no-gear iconless',
     '- no-gear icon-visible',
   ], 'a gear for active sessions, before the title where a row has no icon, a badge for those that need you, no icon for the rest; navigation rows stay');
+  const [working, idle] = steps.LOADED.sideRows;
+  assert.ok(Math.abs(working - idle) <= 1, `a side session at work stays one line with its gear (${working}px, idle ${idle}px)`);
   assert.equal(steps.LOADED.tailMark, 'none', 'Claude\'s own mark at the end of the row gives way to the badge');
   assert.equal(steps.LOADED.decoration, 'none', 'also beside a wrapped link');
   assert.doesNotMatch(steps.LOADED.shimmer, /rgba\(0, 0, 0, 0\)|inline/, 'the title of a working session does not shimmer');
