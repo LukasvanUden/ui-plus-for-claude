@@ -104,6 +104,9 @@ function Install-UiPlus {
   if ((Resolve-Path $Here).Path -ne $InstallDir) {
     New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
     Copy-Item $PSCommandPath (Join-Path $InstallDir 'ui-plus.ps1') -Force
+    # uninstall.cmd too, so it can be run from there after the download is gone.
+    $cmd = Join-Path $Here 'uninstall.cmd'
+    if (Test-Path $cmd) { Copy-Item $cmd $InstallDir -Force }
     $dst = Join-Path $InstallDir 'Extension'
     if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
     Copy-Item $src $dst -Recurse -Force
@@ -135,13 +138,15 @@ function Uninstall-UiPlus {
 
 function Get-Status {
   $ext = @(Get-ExtensionDirs | Where-Object { Test-Path (Join-Path $_ 'manifest.json') })
-  $env = [Environment]::GetEnvironmentVariable('REACT_PROFILE', 'User')
-  if ($ext.Count -gt 0 -and $env -eq '1') { 'installed' } else { 'missing' }
+  $flag = [Environment]::GetEnvironmentVariable('REACT_PROFILE', 'User')
+  if ($ext.Count -gt 0 -and $flag -eq '1') { 'installed' } else { 'missing' }
 }
 
 # Announces each newer release once.
 function Test-Update {
   try {
+    # Windows PowerShell 5.1 may not offer TLS 1.2 by default, which GitHub needs.
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
     $release = Invoke-RestMethod -Uri "$Api/repos/$Repo/releases/latest" -TimeoutSec 10 -Headers @{ 'User-Agent' = 'ui-plus-for-claude' }
   } catch { return }
   $latest = "$($release.tag_name)".TrimStart('v')
@@ -160,15 +165,34 @@ function Test-Update {
 # add-on shows right away. Apps started before the install (and anything
 # Explorer starts before it picks up the new variable) don't have it yet;
 # from the next Windows sign-in on, every start does.
+#
+# Only the desktop app is touched. Claude Code's CLI is also claude.exe, so
+# processes are matched by where the desktop app lives: the classic installer
+# puts it in an AnthropicClaude folder (per user under %LOCALAPPDATA%, or
+# per machine under %ProgramData%\<user>), the MSIX package under
+# WindowsApps\Claude_* or WindowsApps\Anthropic.Claude*.
+function Test-DesktopClaude([string]$path) {
+  $path -match '\\AnthropicClaude\\' -or $path -match '\\WindowsApps\\(Claude_|Anthropic\.Claude)'
+}
+
 function Restart-Claude {
-  $running = @(Get-Process claude -ErrorAction SilentlyContinue)
+  $running = @(Get-Process claude -ErrorAction SilentlyContinue | Where-Object { $_.Path -and (Test-DesktopClaude $_.Path) })
   if ($running.Count -eq 0) { return $false }
-  $exe = ($running | Where-Object { $_.Path } | Select-Object -First 1).Path
-  if (-not $exe) { return $false }
+  $exe = $running[0].Path
   $running | Stop-Process -Force
   Start-Sleep -Seconds 2
   $env:REACT_PROFILE = '1'
-  Start-Process $exe
+  if ($exe -match '\\WindowsApps\\') {
+    # A packaged app can't be started from its exe; activate it through the
+    # shell instead. The shell starts it with the user environment, which
+    # has REACT_PROFILE since the broadcast in Install-UiPlus.
+    $pkg = Get-AppxPackage | Where-Object { $exe.StartsWith($_.InstallLocation + '\', [StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
+    if (-not $pkg) { return $false }
+    $appId = @((Get-AppxPackageManifest $pkg).Package.Applications.Application)[0].Id
+    Start-Process "shell:AppsFolder\$($pkg.PackageFamilyName)!$appId"
+  } else {
+    Start-Process $exe
+  }
   return $true
 }
 
