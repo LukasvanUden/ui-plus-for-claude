@@ -43,8 +43,10 @@ test('sidebar row, popover time lines and settings', { timeout: 60_000 }, async 
     'ready still icon-hidden Ready',
     'error still icon-hidden Error',
     'idle no-gear icon-hidden',
+    'running turning iconless',
+    'idle no-gear iconless',
     '- no-gear icon-visible',
-  ], 'a gear for active sessions, a badge for those that need you, no icon for the rest; navigation rows stay');
+  ], 'a gear for active sessions, before the title where a row has no icon, a badge for those that need you, no icon for the rest; navigation rows stay');
   assert.equal(steps.LOADED.tailMark, 'none', 'Claude\'s own mark at the end of the row gives way to the badge');
   assert.equal(steps.LOADED.decoration, 'none', 'also beside a wrapped link');
   assert.doesNotMatch(steps.LOADED.shimmer, /rgba\(0, 0, 0, 0\)|inline/, 'the title of a working session does not shimmer');
@@ -53,7 +55,7 @@ test('sidebar row, popover time lines and settings', { timeout: 60_000 }, async 
   assert.equal(steps.CLASSLESS_ELSEWHERE.sidebar, null, 'never next to a "More" outside the sidebar');
 
   assert.deepEqual(steps.SESSION_CHANGED.sessions.slice(0, 2), ['ready still icon-hidden Ready', 'running turning icon-hidden'], 'follows state changes in place');
-  assert.deepEqual(steps.SESSIONS_OFF.sessions, Array(5).fill('- no-gear icon-visible').concat('- no-gear icon-visible'));
+  assert.deepEqual(steps.SESSIONS_OFF.sessions, [...Array(5).fill('- no-gear icon-visible'), '- no-gear iconless', '- no-gear iconless', '- no-gear icon-visible']);
   assert.notEqual(steps.SESSIONS_OFF.tailMark, 'none');
   assert.notEqual(steps.SESSIONS_OFF.decoration, 'none');
   assert.equal(steps.SESSIONS_OFF.shimmer, 'rgba(0, 0, 0, 0) inline');

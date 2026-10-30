@@ -660,7 +660,9 @@
   // a status icon for errors and browsing. Each session row gets
   // data-up-session with that state; widget.css puts a gear in place of the
   // icon of active rows, turning while Claude works, and hides the icon of
-  // the others. data-up-badge names what an active row needs.
+  // the others. Rows without an icon, such as side sessions nested under the
+  // session that started them, get the gear before their title.
+  // data-up-badge names what an active row needs.
   const DOT_KINDS = { running: 'running', clay: 'running', awaiting: 'awaiting', ready: 'ready', unread: 'ready', error: 'error' };
   const ATTENTION = { working: 'running', waiting: 'awaiting', unread: 'ready' };
   const AWAITING_LABEL = /await|input|answer|wartet|eingabe|antwort/i;
@@ -695,9 +697,10 @@
     }
     if (!scope) return;
     const badges = strings().badges;
-    // Session rows: rows of the sidebar other than its navigation, with an icon.
+    // Session rows: rows of the sidebar other than its navigation, with an
+    // icon or a title in its place.
     for (const main of scope.querySelectorAll('[data-row-main-button]:not([data-row-nav])')) {
-      if (!main.querySelector(':scope > .df-leading-slot')) continue;
+      if (!main.querySelector(':scope > :is(.df-leading-slot, [data-row-label="iconless"])')) continue;
       const state = sessionState(main.closest('[data-row]') ?? main);
       setAttribute(main, 'data-up-session', state ?? 'idle');
       setAttribute(main, 'data-up-badge', badges[state] ?? null);

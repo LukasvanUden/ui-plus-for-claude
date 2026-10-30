@@ -17,10 +17,16 @@ const SESSION_ROWS = [
   ['Otaros Core', `<span class="relative inline-flex">${ICON}<span class="absolute">${ICON}</span></span>`, 'Otaros Core', '', true],
   ['Content-System', ICON, 'Content-System'],
 ];
+// Side sessions sit under the session that started them, behind a guide
+// line and without an icon, like rows outside the pinned section: one at
+// work, one idle.
+const SIDE_SESSIONS = ['<span class="relative" data-attention="working">Map weiterbauen</span>', 'Notes']
+  .map((label) => `<div data-row class="group" style="display:flex"><a data-row-main-button href="#" style="display:flex;align-items:center;flex:1;min-width:0"><span data-row-label="iconless" style="flex:1;min-width:0">${label}</span></a></div>`).join('');
 // A row with a menu wraps its link and puts the status in a decoration
 // beside it, as a plain colored dot.
 const SESSIONS = SESSION_ROWS.map(([, icon, label, tail = '', decorated = false]) => `<div data-row class="group" style="display:flex">
   ${decorated ? '<span style="display:flex;flex:1;min-width:0">' : ''}<a data-row-main-button href="#" style="display:flex;align-items:center;gap:8px;flex:1;min-width:0"><span class="df-leading-slot" style="display:flex;width:16px">${icon}</span><span data-row-label style="flex:1;min-width:0">${label}</span>${tail}</a>${decorated ? '</span><span data-row-decoration><span aria-hidden="true" class="flex items-center"><span role="img" aria-label="Error"><span class="contents"><span style="display:block;width:6px;height:6px;border-radius:50%;background:red"></span></span></span></span></span>' : ''}</div>`).join('')
+  + `<div class="df-accordion-guide df-family">${SIDE_SESSIONS}</div>`
   + `<a data-row-main-button data-row-nav href="#"><span class="df-leading-slot">${ICON}</span><span data-row-label>New session</span></a>`;
 
 // The More row shows the page last opened from its menu, here Customize,
@@ -114,12 +120,12 @@ function state(contents) {
       } : null,
       sessions: [...document.querySelectorAll('.dframe-nav-scroll [data-row-main-button]')].map((main) => {
         const slot = main.querySelector('.df-leading-slot');
-        const gear = getComputedStyle(slot, '::before');
+        const gear = getComputedStyle(slot ?? main.querySelector('[data-row-label]'), '::before');
         const badge = getComputedStyle(main, '::after').content;
         return [
           main.dataset.upSession ?? '-',
           gear.content === 'none' ? 'no-gear' : gear.animationName === 'up-spin' ? 'turning' : 'still',
-          'icon-' + getComputedStyle(slot.firstElementChild).visibility,
+          slot ? 'icon-' + getComputedStyle(slot.firstElementChild).visibility : 'iconless',
           badge === 'none' ? '' : badge.replace(/"/g, ''),
         ].join(' ').trim();
       }),

@@ -25,7 +25,7 @@ Claude's limits reset every five hours and every week. Claude shows how much of 
 
 - **Usage in the sidebar.** Your session and weekly limits as bars, always in view, with how far over or under pace you are for the week, e.g. "13% over pace". Click the **Usage** row to show or hide the bars.
 - **Pace at a glance.** A thin line above each bar shows how much of that window has passed. Green: room to spare. Orange: you're using it faster than time passes. Red: the same, close to the limit.
-- **Sessions that stand out.** A turning gear marks every session Claude is working on. When a session needs you, it stops and shows **Waiting**, **Ready** or **Error**. Sessions with nothing going on show no icon.
+- **Sessions that stand out.** A turning gear marks every session Claude is working on, side sessions under the session that started them included. When a session needs you, it stops and shows **Waiting**, **Ready** or **Error**. Sessions with nothing going on show no icon.
 - **Context in the usage popover.** The ring below the message box gets the same time lines, plus the current session's context in Claude's own colored bar, with **Compact session** one click away.
 - **Feels native.** It uses Claude's own styles, follows light and dark mode, and speaks English and German, like Claude.
 
