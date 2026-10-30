@@ -1,25 +1,28 @@
-// Exports PNGs of docs/demo for the README: for each shot below, the usage
-// popover and the sidebar row, in dark and light, at 2x. Run with
+// Exports the README images from docs/mockup at 2x: the whole window, the
+// pace states, the session states (a PNG, and a GIF of the turning gears
+// when ffmpeg is installed) and the usage popover. Run with
 // `npm run screenshots`; the images land in docs/screenshots.
 const { app, BrowserWindow } = require('electron');
+const { execFileSync } = require('child_process');
 const fs = require('fs');
 const http = require('http');
+const os = require('os');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const OUT = path.join(ROOT, 'docs', 'screenshots');
 
-// usage and context name scenarios in docs/demo/demo.js. Every shot keeps
-// the context at 50% or more, where Claude offers Compact session.
+// usage and context name scenarios in docs/demo/demo.js.
 const SHOTS = [
-  { name: 'session-tight', usage: 'session', context: 'mid' },
-  { name: 'weekly-tight', usage: 'weekly', context: 'high' },
-  { name: 'compact', usage: 'under', context: 'compact' },
+  { name: 'hero', view: 'hero', usage: 'weekly' },
+  { name: 'pace', view: 'pace' },
+  { name: 'sessions', view: 'sessions', usage: 'weekly', gif: true },
+  { name: 'popover', view: 'popover', usage: 'session' },
 ];
-const THEMES = ['dark', 'light'];
-const LANG = 'en';
-// Room around each element, for the popover's shadow.
-const MARGIN = 16;
+// The gear turns once in 2.4 s (Extension/widget.css). It has six teeth, so
+// the GIF shows a sixth of a turn and loops without a jump.
+const LOOP_S = 2.4 / 6;
+const FRAMES = 8;
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
 
@@ -36,41 +39,51 @@ function serve() {
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
 }
 
-// Waits until the extension has drawn its time lines in both places.
-async function settled(contents) {
-  for (let attempt = 0; attempt < 50; attempt += 1) {
-    const ready = await contents.executeJavaScript(
-      `Boolean(document.querySelector('[data-cds="Popover"] .up-time') && document.querySelector('#usage-pace .up-time'))`,
-    );
-    if (ready) return new Promise((resolve) => setTimeout(resolve, 300));
-    await new Promise((resolve) => setTimeout(resolve, 100));
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Loads a view, waits until the extension has drawn it, and returns the
+// area to capture.
+async function render(win, port, shot) {
+  const query = new URLSearchParams({ view: shot.view, usage: shot.usage ?? 'under', context: 'mid', lang: 'en', theme: 'dark', capture: '1', bare: '' });
+  await win.loadURL(`http://127.0.0.1:${port}/docs/mockup/?${query}`);
+  const contents = win.webContents;
+  for (let attempt = 0; !(await contents.executeJavaScript('window.mockupReady()')); attempt += 1) {
+    if (attempt === 80) throw new Error('The mockup did not render: ' + shot.view);
+    await delay(100);
   }
-  throw new Error('The extension did not render in the demo page.');
+  await delay(600);
+  const { width, height } = await contents.executeJavaScript('window.layoutMockup()');
+  await delay(300);
+  return { x: 0, y: 0, width, height };
 }
 
-// The popover with its shadow; the sidebar from its top down to the end of
-// the Usage rows.
-function regions(contents) {
-  return contents.executeJavaScript(`(() => {
-    const box = (top, right, bottom, left) => ({
-      x: Math.max(0, Math.floor(left - ${MARGIN})),
-      y: Math.max(0, Math.floor(top - ${MARGIN})),
-      width: Math.ceil(right - left + 2 * ${MARGIN}),
-      height: Math.ceil(bottom - top + 2 * ${MARGIN}),
-    });
-    const popover = document.querySelector('[data-cds="Popover"]').getBoundingClientRect();
-    const sidebar = document.querySelector('.sidebar').getBoundingClientRect();
-    const usage = document.getElementById('usage-pace').getBoundingClientRect();
-    return {
-      popover: box(popover.top, popover.right, popover.bottom, popover.left),
-      sidebar: {
-        x: Math.floor(sidebar.left),
-        y: Math.floor(sidebar.top),
-        width: Math.ceil(sidebar.width),
-        height: Math.ceil(usage.bottom - sidebar.top + 4),
-      },
-    };
-  })()`);
+// One frame per step of the loop, each holding the gears' animation at a
+// later point. Only what changes between frames (the gears) is stored again.
+async function gif(contents, rect, file) {
+  const frames = fs.mkdtempSync(path.join(os.tmpdir(), 'ui-plus-frames-'));
+  for (let frame = 0; frame < FRAMES; frame += 1) {
+    const at = (frame / FRAMES) * LOOP_S;
+    await contents.executeJavaScript(`(() => {
+      const style = document.getElementById('gif-frame') ?? document.head.appendChild(Object.assign(document.createElement('style'), { id: 'gif-frame' }));
+      style.textContent = '[data-up-session] > :is(.df-leading-slot, [data-row-label="iconless"])::before { animation-play-state: paused !important; animation-delay: -${at}s !important; }';
+    })()`);
+    await delay(60);
+    fs.writeFileSync(path.join(frames, `frame${String(frame).padStart(2, '0')}.png`), (await contents.capturePage(rect)).toPNG());
+  }
+  execFileSync('ffmpeg', [
+    '-y', '-loglevel', 'error', '-framerate', String(FRAMES / LOOP_S), '-i', path.join(frames, 'frame%02d.png'),
+    '-vf', 'split[a][b];[a]palettegen=stats_mode=full[p];[b][p]paletteuse=dither=none:diff_mode=rectangle', '-loop', '0', file,
+  ]);
+  fs.rmSync(frames, { recursive: true });
+}
+
+function hasFfmpeg() {
+  try {
+    execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 app.commandLine.appendSwitch('force-device-scale-factor', '2');
@@ -80,30 +93,33 @@ app.whenReady().then(async () => {
   const server = await serve();
   const { port } = server.address();
   fs.mkdirSync(OUT, { recursive: true });
-  // Transparent around the popover, so the images sit on any page color.
+  // One window for every shot, large enough for each; the canvas is
+  // transparent around the window and the rounded cards.
   const win = new BrowserWindow({
     show: false,
-    width: 1100,
-    height: 760,
+    width: 1400,
+    height: 1100,
+    useContentSize: true,
     transparent: true,
     backgroundColor: '#00000000',
     webPreferences: { backgroundThrottling: false },
   });
-  const contents = win.webContents;
-  contents.on('console-message', (event) => {
-    if (event.level === 'error') console.error('demo: ' + event.message);
+  win.webContents.on('console-message', (event) => {
+    if (event.level === 'error') console.error('mockup: ' + event.message);
   });
 
+  const ffmpeg = hasFfmpeg();
   for (const shot of SHOTS) {
-    for (const theme of THEMES) {
-      const query = new URLSearchParams({ usage: shot.usage, context: shot.context, lang: LANG, theme, capture: '1' });
-      await win.loadURL(`http://127.0.0.1:${port}/docs/demo/?${query}`);
-      await settled(contents);
-      for (const [part, rect] of Object.entries(await regions(contents))) {
-        const file = path.join(OUT, `${shot.name}-${part}-${theme}.png`);
-        fs.writeFileSync(file, (await contents.capturePage(rect)).toPNG());
-        console.log(path.relative(ROOT, file));
-      }
+    const rect = await render(win, port, shot);
+    const file = path.join(OUT, shot.name + '.png');
+    fs.writeFileSync(file, (await win.webContents.capturePage(rect)).toPNG());
+    console.log(path.relative(ROOT, file));
+    if (shot.gif && ffmpeg) {
+      const animated = path.join(OUT, shot.name + '.gif');
+      await gif(win.webContents, rect, animated);
+      console.log(path.relative(ROOT, animated));
+    } else if (shot.gif) {
+      console.log('ffmpeg not found: no ' + shot.name + '.gif');
     }
   }
   server.close();

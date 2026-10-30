@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UI+ for Claude mockup</title>
+<!-- The Claude desktop app (Code tab, dark) as it looks today, measured from
+     a screenshot, with the real extension (../../Extension) running inside
+     and ../demo answering the usage API. ?view= picks what to show; the
+     README images and Scripts/screenshots.js use it. -->
+<link rel="stylesheet" href="../demo/demo.css">
+<link rel="stylesheet" href="../../Extension/widget.css">
+<link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+<div class="canvas">
+  <header class="headline">
+    <h1 id="headline-title"></h1>
+    <p id="headline-text"></p>
+  </header>
+
+  <div class="window">
+    <form class="toolbar" id="toolbar">
+      <select name="usage"></select><select name="context"></select>
+      <select name="lang"><option value="en">English</option><option value="de">Deutsch</option></select>
+      <select name="theme"><option value="dark">Dark</option><option value="light">Light</option></select>
+    </form>
+
+    <div class="topbar">
+      <div class="topbar-side">
+        <span class="lights"><i></i><i></i><i></i></span>
+        <span class="tb-icon" data-icon="sidebar"></span>
+        <span class="tb-icon" data-icon="back"></span>
+        <span class="tb-icon" data-icon="forward"></span>
+        <span class="mode-switch"><span data-icon="chat"></span><span class="on" data-icon="code"></span></span>
+      </div>
+      <div class="topbar-main">
+        <span class="session-title"><span id="session-title"></span><span data-icon="chevron"></span></span>
+        <span class="tb-actions">
+          <span data-icon="list"></span><span data-icon="terminal"></span><span data-icon="diff"></span>
+          <span data-icon="globe"></span><span data-icon="folder"></span><span data-icon="more"></span>
+        </span>
+      </div>
+    </div>
+
+    <main class="stage">
+      <nav class="sidebar">
+        <div class="dframe-nav-scroll">
+          <div class="nav-group" id="nav-group"></div>
+          <div class="dframe-recents-by-mode">
+            <div class="df-label-inset"><button type="button" class="section-label"><span id="recents-label">Pinned</span><i data-icon="caret"></i></button></div>
+            <ul class="recents" id="recents"></ul>
+          </div>
+        </div>
+        <div class="account">
+          <span class="avatar">L</span><span class="account-name">Lukas</span><span class="account-plan">· Max</span><span class="account-caret" data-icon="chevron"></span>
+          <span class="account-bug" data-icon="bug"></span>
+        </div>
+      </nav>
+
+      <section class="conversation">
+        <div class="thread" id="thread"></div>
+        <div class="popover-anchor"><div id="portal-root"></div></div>
+        <div class="composer-area">
+          <div class="composer">
+            <span class="composer-plus" data-icon="plus"></span>
+            <span class="composer-placeholder" id="composer-placeholder"></span>
+            <span class="composer-mic" data-icon="mic"></span>
+          </div>
+          <div class="composer-footer">
+            <span>Auto</span>
+            <span class="model">Opus 5.5 <span class="effort">Medium</span><span class="usage-ring"></span></span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="rail" id="rail" hidden></aside>
+    </main>
+  </div>
+
+  <div class="states" id="states"></div>
+  <div class="callouts" id="callouts"></div>
+  <footer class="credit">UI+ for Claude · free and open source · github.com/LukasvanUden/ui-plus-for-claude</footer>
+</div>
+
+<script src="../demo/demo.js"></script>
+<script src="../../Extension/widget.js"></script>
+<script src="mockup.js"></script>
+</body>
+</html>
