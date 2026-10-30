@@ -222,20 +222,24 @@
   // Sidebar -----------------------------------------------------------------
 
   // The widget goes right before the sidebar's recents/projects block. Claude's
-  // layout classes work in every language; the English and German labels are
+  // layout classes work in every language; the block keeps the lists of the
+  // other modes (chat, cowork, code) mounted but hidden, so the first label
+  // that shows belongs to the current one. The English and German labels are
   // the fallback: the lowest container holding "More" and the first section
-  // header, right before the block with that header.
+  // header, right before the block with that header. The More row can show
+  // the page last opened from its menu instead, and a "More" elsewhere would
+  // make that container the whole window: it has to be a narrow column.
   function findSlot() {
-    const recents = document.querySelector('.dframe-nav-scroll > .dframe-recents-by-mode');
-    const label = recents?.querySelector('.df-label-inset span');
-    if (recents && label && visible(label)) return { parent: recents.parentElement, before: recents, header: label };
+    const label = [...document.querySelectorAll('.dframe-nav-scroll > .dframe-recents-by-mode .df-label-inset span')].find(visible);
+    const recents = label?.closest('.dframe-recents-by-mode');
+    if (recents) return { parent: recents.parentElement, before: recents, header: label };
 
     const more = findLabel(MORE);
     const sectionHeader = more && findLabel(SECTION_HEADERS);
     if (!sectionHeader) return null;
     let parent = more.parentElement;
     while (parent && !parent.contains(sectionHeader)) parent = parent.parentElement;
-    if (!parent) return null;
+    if (!parent || parent.getBoundingClientRect().width > window.innerWidth / 2) return null;
     let block = sectionHeader;
     while (block.parentElement !== parent) block = block.parentElement;
     return { parent, before: block, header: sectionHeader };

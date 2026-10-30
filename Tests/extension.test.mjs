@@ -24,8 +24,8 @@ test('sidebar row, popover time lines and settings', { timeout: 60_000 }, async 
   const steps = await runFakeClaude();
 
   const { sidebar } = steps.LOADED;
-  assert.equal(sidebar.previous, 'ArtifactsCustomizeMore');
-  assert.equal(sidebar.next, 'dframe-recents-by-mode');
+  assert.equal(sidebar.previous, 'ArtifactsScheduledCustomize', 'below the More row, also while it shows another page than "More"');
+  assert.equal(sidebar.next, 'dframe-recents-by-mode', 'by the first section label that shows, not one of a hidden list');
   assert.equal(sidebar.header, 'Usage 16% over pace');
   assert.match(sidebar.headerClasses, /\bnav-row\b.*\bup-header\b/);
   assert.deepEqual(sidebar.iconSize, [16], 'the gauge takes the size of Claude\'s icon');
@@ -48,6 +48,9 @@ test('sidebar row, popover time lines and settings', { timeout: 60_000 }, async 
   assert.equal(steps.LOADED.tailMark, 'none', 'Claude\'s own mark at the end of the row gives way to the badge');
   assert.equal(steps.LOADED.decoration, 'none', 'also beside a wrapped link');
   assert.doesNotMatch(steps.LOADED.shimmer, /rgba\(0, 0, 0, 0\)|inline/, 'the title of a working session does not shimmer');
+
+  assert.equal(steps.CLASSLESS.sidebar?.previous, 'ArtifactsScheduledMore', 'without Claude\'s layout classes, below the row labelled "More"');
+  assert.equal(steps.CLASSLESS_ELSEWHERE.sidebar, null, 'never next to a "More" outside the sidebar');
 
   assert.deepEqual(steps.SESSION_CHANGED.sessions.slice(0, 2), ['ready still icon-hidden Ready', 'running turning icon-hidden'], 'follows state changes in place');
   assert.deepEqual(steps.SESSIONS_OFF.sessions, Array(5).fill('- no-gear icon-visible').concat('- no-gear icon-visible'));

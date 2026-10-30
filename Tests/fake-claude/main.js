@@ -23,14 +23,29 @@ const SESSIONS = SESSION_ROWS.map(([, icon, label, tail = '', decorated = false]
   ${decorated ? '<span style="display:flex;flex:1;min-width:0">' : ''}<a data-row-main-button href="#" style="display:flex;align-items:center;gap:8px;flex:1;min-width:0"><span class="df-leading-slot" style="display:flex;width:16px">${icon}</span><span data-row-label style="flex:1;min-width:0">${label}</span>${tail}</a>${decorated ? '</span><span data-row-decoration><span aria-hidden="true" class="flex items-center"><span role="img" aria-label="Error"><span class="contents"><span style="display:block;width:6px;height:6px;border-radius:50%;background:red"></span></span></span></span></span>' : ''}</div>`).join('')
   + `<a data-row-main-button data-row-nav href="#"><span class="df-leading-slot">${ICON}</span><span data-row-label>New session</span></a>`;
 
-const PAGE = `<!doctype html><html lang="en" style="--cds-fill-accent:#2a78d6"><body style="width:300px;font:14px sans-serif">
-<div class="dframe-nav-scroll">
-  <div><a>Artifacts</a><a>Customize</a><button id="more" aria-expanded="false" class="nav-row"><span data-cds="Icon" aria-hidden="true" style="font-size:16px">&#xe000;</span><span class="text-muted">More</span></button></div>
-  <div class="dframe-recents-by-mode"><div class="df-label-inset"><button><span>Projects</span></button></div>${SESSIONS}</div>
+// The More row shows the page last opened from its menu, here Customize,
+// instead of "More". The recents block keeps the list of each other mode
+// mounted but hidden, before the one of the current mode. Right of the
+// sidebar, the page has a "More" of its own.
+const PAGE = `<!doctype html><html lang="en" style="--cds-fill-accent:#2a78d6"><body style="font:14px sans-serif">
+<div style="display:flex">
+<div class="dframe-nav-scroll" style="flex:none;width:300px">
+  <div><a>Artifacts</a><a>Scheduled</a><button id="more" aria-expanded="false" class="nav-row"><span data-cds="Icon" aria-hidden="true" style="font-size:16px">&#xe000;</span><span>Customize</span></button></div>
+  <div class="dframe-recents-by-mode"><div style="display:none"><div class="df-label-inset"><button><span>Recents</span></button></div></div><div><div class="df-label-inset"><button><span>Projects</span></button></div>${SESSIONS}</div></div>
+</div>
+<main><button>More</button></main>
 </div>
 <aside><section><span data-rail-context-summary data-rail-context-pct="37">74k / 200k</span><div data-cds="StackedMeter" role="img" aria-label="Context" tabindex="0"><span style="width:30%;background-color:rgb(74, 127, 217)"></span><span style="width:7%;background-color:rgb(208, 96, 58)"></span></div><button onclick="window.compacted = (window.compacted ?? 0) + 1">Compact session</button></section></aside>
 <div id="portal-root"></div>
 </body></html>`;
+
+// Without Claude's layout classes, the extension finds the sidebar by its
+// "More" row, which ?more labels "More" again.
+const CLASSLESS = PAGE.replace(/ class="(dframe-nav-scroll|dframe-recents-by-mode|df-label-inset)"/g, '');
+const PAGES = {
+  '?classless': CLASSLESS,
+  '?classless&more': CLASSLESS.replace('<span>Customize</span>', '<span>More</span>'),
+};
 
 // Like Claude's, the popover shows fewer rows than the usage API returns and
 // calls the weekly limit for all models just "Weekly".
@@ -91,8 +106,8 @@ function state(contents) {
         headerIds: widget.querySelectorAll('[id]').length,
         rowsVisible: widget.querySelector('.up-rows').getBoundingClientRect().height > 0,
         text: widget.querySelector('.up-rows').innerText,
-        previous: widget.previousElementSibling.textContent.replace(/[^\\x20-\\x7e]/g, '').trim(),
-        next: widget.nextElementSibling.className,
+        previous: widget.previousElementSibling?.textContent.replace(/[^\\x20-\\x7e]/g, '').trim() ?? null,
+        next: widget.nextElementSibling?.className ?? null,
         over: widget.querySelectorAll('.up-in-sidebar .up-segment-over').length,
         buffer: widget.querySelectorAll('.up-in-sidebar .up-segment-buffer').length,
         styled: getComputedStyle(widget.querySelector('.up-track')).position === 'relative',
@@ -152,13 +167,13 @@ app.whenReady().then(async () => {
   // The organization comes from the lastActiveOrg cookie, as on claude.ai;
   // /api/organizations lists another one to prove the cookie wins.
   protocol.handle('https', (request) => {
-    const { pathname } = new URL(request.url);
+    const { pathname, search } = new URL(request.url);
     const usageOf = account.usage[/^\/api\/organizations\/([^/]+)\/usage$/.exec(pathname)?.[1]];
     if (usageOf) return Response.json(usageOf());
     if (pathname.endsWith('/usage')) return new Response('forbidden', { status: 403 });
     if (pathname === '/api/organizations') return Response.json(account.organizations);
     if (pathname.startsWith('/api/')) return new Response('not found', { status: 404 });
-    return new Response(PAGE, { headers: { 'content-type': 'text/html' } });
+    return new Response(PAGES[search] ?? PAGE, { headers: { 'content-type': 'text/html' } });
   });
   await session.defaultSession.clearStorageData();
   await session.defaultSession.cookies.set({ url: 'https://claude.ai', name: 'lastActiveOrg', value: 'org-active' });
@@ -170,6 +185,13 @@ app.whenReady().then(async () => {
   await delay(1000);
 
   await step(contents, 'LOADED');
+  for (const [name, search] of [['CLASSLESS', '?classless&more'], ['CLASSLESS_ELSEWHERE', '?classless']]) {
+    const other = new BrowserWindow({ show: false, webPreferences: { backgroundThrottling: false } });
+    await other.loadURL('https://claude.ai/epitaxy/test' + search);
+    await delay(1000);
+    await step(other.webContents, name);
+    other.destroy();
+  }
   await step(contents, 'POPOVER', `document.getElementById('portal-root').innerHTML = ${JSON.stringify(POPOVER)}`);
   // Like cloud session credits in some accounts: a block with a meter of its
   // own below the limits, loaded after them.
