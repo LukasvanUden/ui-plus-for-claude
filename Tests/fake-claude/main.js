@@ -9,6 +9,9 @@ const path = require('path');
 // corner, data-attention on the title, a dot at the end of the row, a warning
 // in the icon's corner, nothing. A navigation row with an icon comes last.
 const ICON = '<span data-cds="Icon" aria-hidden="true" style="font-size:16px">&#xe001;</span>';
+function pulse(style, cls = '') {
+  return `<span data-cds="Pulse" class="block rounded-full ${cls}" style="${style};width:6px;height:6px;border-radius:50%"></span>`;
+}
 const SESSION_ROWS = [
   ['Sherine', `<span role="status" aria-label="Running"><span class="relative inline-flex">${ICON}<span class="absolute"><span class="status-dot" data-kind="running"></span></span></span></span>`,
     '<span data-cds="ShimmerText" data-shimmering="true" style="-webkit-text-fill-color:transparent;background-image:linear-gradient(red,blue);-webkit-background-clip:text">Sherine<span data-cds-shimmer-clone aria-hidden="true">Sherine</span></span>'],
@@ -16,6 +19,12 @@ const SESSION_ROWS = [
   ['OTAROS', ICON, 'OTAROS', '<span class="df-tail-mark"><span class="status-dot" data-kind="unread"></span></span>'],
   ['Otaros Core', `<span class="relative inline-flex">${ICON}<span class="absolute">${ICON}</span></span>`, 'Otaros Core', '', true],
   ['Content-System', ICON, 'Content-System'],
+  // Tab-style rows (Claude 4.23118): the state is a Pulse dot at the end,
+  // colored by the state, with an idle row showing a hollow ring instead.
+  ['Pulse running', ICON, 'Pulse running', pulse('background:var(--cds-text-muted)', 'df-tab-dot-running')],
+  ['Pulse awaiting', ICON, 'Pulse awaiting', pulse('background:var(--cds-fill-warning)')],
+  ['Pulse ready', ICON, 'Pulse ready', pulse('background:var(--cds-fill-accent)')],
+  ['Pulse idle', ICON, 'Pulse idle', '<span aria-hidden="true" style="display:block;width:6px;height:6px;border-radius:50%;border:1px solid"></span>'],
 ];
 // Side sessions sit under the session that started them, behind a guide
 // line and without an icon, like rows outside the pinned section: one at

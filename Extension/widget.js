@@ -666,12 +666,22 @@
   const DOT_KINDS = { running: 'running', clay: 'running', awaiting: 'awaiting', ready: 'ready', unread: 'ready', error: 'error' };
   const ATTENTION = { working: 'running', waiting: 'awaiting', unread: 'ready' };
   const AWAITING_LABEL = /await|input|answer|wartet|eingabe|antwort/i;
+  // In the tab-style sidebar rows (Claude 4.23118 and later) the state is a
+  // [data-cds="Pulse"] dot colored by the state: muted while working (with
+  // .df-tab-dot-running), warning for awaiting, accent for unread.
+  const PULSE_COLORS = [['--cds-text-muted', 'running'], ['--cds-fill-warning', 'awaiting'], ['--cds-fill-accent', 'ready']];
 
   function sessionState(row) {
     const dot = DOT_KINDS[row.querySelector('.status-dot[data-kind]')?.dataset.kind];
     if (dot) return dot;
     const attention = ATTENTION[row.querySelector('[data-attention]')?.dataset.attention];
     if (attention) return attention;
+    for (const pulse of row.querySelectorAll('[data-cds="Pulse"]')) {
+      if (pulse.classList.contains('df-tab-dot-running')) return 'running';
+      const style = pulse.getAttribute('style') ?? '';
+      const state = PULSE_COLORS.find(([color]) => style.includes(color))?.[1];
+      if (state) return state;
+    }
     if (row.querySelector('.df-leading-slot .absolute > [data-cds="Icon"]')) return 'error';
     for (const status of row.querySelectorAll('[role="status"][aria-label]')) {
       const icon = status.querySelector('[data-cds="Icon"]');
