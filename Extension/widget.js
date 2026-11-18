@@ -205,17 +205,27 @@
     return null;
   }
 
-  // Grey up to where usage and time agree; the colored segment below it
-  // spans to whichever of the two is further along.
+  // Grey up to where usage and time agree; the colored segment starts where
+  // the grey ends and spans to whichever of the two is further along. The
+  // grey is translucent, so the two must not overlap or the color shows
+  // through it.
   function timeLine(time, className) {
     const line = element('div', 'up-time ' + className);
     line.dataset.version = String(version);
     if (time) {
-      const difference = element('div', 'up-segment ' + (time.over ? 'up-segment-over' : 'up-segment-buffer'));
-      difference.style.width = time.end + '%';
       const shared = element('div', 'up-segment up-segment-elapsed');
       shared.style.width = time.shared + '%';
-      line.append(difference, shared);
+      line.append(shared);
+      if (time.end > time.shared) {
+        const difference = element('div', 'up-segment ' + (time.over ? 'up-segment-over' : 'up-segment-buffer'));
+        difference.style.left = time.shared + '%';
+        difference.style.width = time.end - time.shared + '%';
+        if (time.shared > 0) {
+          difference.style.borderRadius = '0 99px 99px 0';
+          shared.style.borderRadius = '99px 0 0 99px';
+        }
+        line.append(difference);
+      }
     }
     return line;
   }
